@@ -1,186 +1,218 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-    crossorigin="anonymous"></script>
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"
-    integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        .task-tree .step-item {
+            border-left: 2px solid #dee2e6;
+            margin-left: 1.5rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        
+        .task-tree .step-item::before {
+            content: '';
+            position: absolute;
+            left: -2px;
+            top: 1.2rem;
+            width: 1.5rem;
+            height: 2px;
+            background-color: #dee2e6;
+        }
 
-  <style>
-    .tree {
-      --spacing: 1.5rem;
-      --radius: 10px;
-    }
+        .step-container {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s ease;
+        }
 
-    .tree li {
-      display: block;
-      position: relative;
-      padding-left: calc(2 * var(--spacing) - var(--radius) - 2px);
-    }
+        .step-container:hover {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
 
-    .tree ul {
-      margin-left: calc(var(--radius) - var(--spacing));
-      padding-left: 0;
-    }
+        .subtask-link {
+            color: #198754;
+            text-decoration: none;
+            transition: color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
 
-    .tree ul li {
-      border-left: 2px solid #ddd;
-    }
+        .subtask-link:hover {
+            color: #146c43;
+        }
 
-    .tree ul li:last-child {
-      border-color: transparent;
-    }
+        .collapse-icon {
+            transition: transform 0.2s;
+        }
 
-    .tree ul li::before {
-      content: '';
-      display: block;
-      position: absolute;
-      top: calc(var(--spacing) / -2);
-      left: -2px;
-      width: calc(var(--spacing) + 2px);
-      height: calc(var(--spacing) + 1px);
-      border: solid #ddd;
-      border-width: 0 0 2px 2px;
-    }
-
-    .tree summary {
-      display: block;
-      cursor: pointer;
-    }
-
-    .tree summary::marker,
-    .tree summary::-webkit-details-marker {
-      display: none;
-    }
-
-    .tree summary:focus {
-      outline: none;
-    }
-
-    .tree summary:focus-visible {
-      outline: 1px dotted #000;
-    }
-
-    .tree li::after,
-    .tree summary::before {
-      content: '';
-      display: block;
-      position: absolute;
-      top: calc(var(--spacing) / 2 - var(--radius));
-      left: calc(var(--spacing) - var(--radius) - 1px);
-      width: calc(2 * var(--radius));
-      height: calc(2 * var(--radius));
-      border-radius: 50%;
-      background: #ddd;
-    }
-
-    .tree summary::before {
-      z-index: 1;
-      background: #696 url('expand-collapse.svg') 0 0;
-    }
-
-    .tree details[open]>summary::before {
-      background-position: calc(-2 * var(--radius)) 0;
-    }
-  </style>
+        [aria-expanded="true"] .collapse-icon {
+            transform: rotate(90deg);
+        }
+    </style>
 </head>
 
-<body class="container">
+<body class="container py-4">
+    <!-- Header -->
+    <header class="border-bottom pb-3 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h2 mb-0">Agents on Tasks</h1>
+            <a class="btn btn-success" href="{% url 'agentoapp:index' %}">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
+    </header>
 
-  <div class="page-header">
-    <h1>Agents on Tasks </h1>
-    <a class="btn btn-success" href="{% url 'agentoapp:index' %}">Back</a>
-  </div>
-  {% if action == 'create' %}
-  <div class="container">
-    <p class="text-left">Create a new Task.</p>
-    <form method="POST" action="{% url 'agentoapp:task' action='create' id=0 %}">
-      {% csrf_token %}
-      <div class="form-group">
-        <label for="taskName">Task Name</label>
-        <input type="text" class="form-control" name="taskName" aria-describedby="taskName" placeholder="Task Name">
-      </div>
-      <div class="form-group">
-        <label for="taskDescription">Description</label>
-        <input type="textarea" class="form-control" name="taskDescription" placeholder="Description">
-      </div>
+    <!-- Main Content -->
+    <main>
+        {% if action == 'create' %}
+        <div class="container">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h2 class="h4 mb-4">Create a new Task</h2>
+                    <form method="POST" action="{% url 'agentoapp:task' action='create' id=0 %}" class="needs-validation">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="taskName" class="form-label">Task Name</label>
+                            <input type="text" class="form-control" name="taskName" id="taskName" 
+                                placeholder="Enter task name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="taskDescription" class="form-label">Description</label>
+                            <textarea class="form-control" name="taskDescription" id="taskDescription" 
+                                rows="3" placeholder="Enter task description"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg"></i> Create Task
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% elif action == 'edit' %}
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="task-tree">
+                    <div class="task-header mb-4">
+                        <h2 class="h4 mb-2">{{task.name}}</h2>
+                        <p class="text-muted">{{task.description}}</p>
+                    </div>
+                    
+                    <div id="subTasks">
+                        {% for st in st_list %}
+                        <div class="step-item">
+                            <div class="step-container">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h3 class="h5 mb-0">
+                                        <a class="text-dark text-decoration-none" data-bs-toggle="collapse" 
+                                            href="#step{{st.step}}" role="button">
+                                            <i class="bi bi-chevron-right collapse-icon me-2"></i>
+                                            Step {{st.step}}
+                                        </a>
+                                    </h3>
+                                    <a href="/task/{{id}}/step/{{st.step}}/addsubtask" 
+                                        class="btn btn-outline-success btn-sm">
+                                        <i class="bi bi-plus-lg"></i> Add Subtask
+                                    </a>
+                                </div>
+                                
+                                <div class="collapse show" id="step{{st.step}}">
+                                    <div class="ps-4">
+                                        {% for sbt in st.subtasks %}
+                                        <div class="mb-2">
+                                            <a href="/task/{{id}}/step/{{sbt.id}}/edit" class="subtask-link">
+                                                <i class="bi bi-circle"></i>
+                                                {{sbt.name}}
+                                            </a>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <button id="addStep" class="btn btn-outline-success mt-3">
+                        <i class="bi bi-plus-lg"></i> Add Step
+                    </button>
+                </div>
+            </div>
+        </div>
 
-      <button type="submit" class="btn btn-primary">Submit</button>
-    </form>
-  </div>
-  {% elif action == 'edit' %}
-  <ul class="tree-padding tree-vertical-lines tree-horizontal-lines tree-summaries tree-markers tree-buttons">
-    <li>
-      <details open="">
-        <summary>{{task.name}} <small>({{task.description}})</small> </summary>
+        <div class="mt-4">
+            <a id="runTaskBtn" href="/task/run/{{id}}" class="btn btn-success">
+                <i class="bi bi-play-fill"></i> Run Task
+            </a>
+            <div id="result" class="mt-3 card">
+                <div class="card-body"></div>
+            </div>
+        </div>
+        {% endif %}
+    </main>
 
-        <ul id="subTasks">
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 
-          {% for st in st_list%}
+    <script>
+        $("#addStep").click(function(e) {
+            const id = $("#subTasks").children().length;
+            const task = `
+                <div class="step-item">
+                    <div class="step-container">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h3 class="h5 mb-0">
+                                <a class="text-dark text-decoration-none" data-bs-toggle="collapse" 
+                                    href="#step${id}" role="button">
+                                    <i class="bi bi-chevron-right collapse-icon me-2"></i>
+                                    Step ${id}
+                                </a>
+                            </h3>
+                            <a href="/task/{{id}}/step/${id}/addsubtask" 
+                                class="btn btn-outline-success btn-sm">
+                                <i class="bi bi-plus-lg"></i> Add Subtask
+                            </a>
+                        </div>
+                        <div class="collapse show" id="step${id}">
+                            <div class="ps-4"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $("#subTasks").append(task);
+        });
 
-          <li id="{{st.step}}" class="col-12" style="border:2px solid gray;padding:1em;">
-            <details open="">
-              <summary>Step {{st.step}}</summary>
-              <ul>
-                {% for sbt in st.subtasks %}
-                <li><a href="/task/{{id}}/step/{{sbt.id}}/edit">{{sbt.name}}</a></li>
-                {% endfor %}
-              </ul>
-            </details>
-            <a id="addSubTask" href="/task/{{id}}/step/{{st.step}}/addsubtask" class="btn btn-outline-success"><small>+
-                Create Sub Task</small></a>
-          </li>
-
-          {% endfor %}
-        </ul>
-      </details>
-      <button id="addStep" class="btn btn-outline-success"><small>Add Steps</small></button>
-    
-    </li> 
-  </ul>
-  {% endif %}
-  <a id="runTaskBtn" href="/task/run/{{id}}" class="btn btn-outline-success"><small>Run Task</small></a>
-  <div id="result"></div>
-  
-
+        $("#runTaskBtn").click(function(e) {
+            e.preventDefault();
+            const $btn = $(this);
+            const $result = $("#result .card-body");
+            
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Running...');
+            
+            $.ajax({
+                url: "/task/run/{{id}}",
+                success: function(result) {
+                    $result.html(result);
+                },
+                complete: function() {
+                    $btn.prop('disabled', false).html('<i class="bi bi-play-fill"></i> Run Task');
+                }
+            });
+        });
+    </script>
 </body>
-
 </html>
-
-<script>
-
-  $("#addStep").click(function (e) {
-    var id = $("#subTasks").children().length;
-    var task = `
-    <li id="step-${id}" class="col-12"  style="border:1px solid black">
-        <details open="">
-          <summary>Step ${id}</summary>
-          <ul>
-          
-          </ul>
-        </details>
-          <a id="addSubTask" href="/task/{{id}}/step/${id}/addsubtask" class="btn btn-outline-success"><small>+ Create Sub Task</small></a>
-      </li>
-    `
-
-    $("#subTasks").append(task);
-  });
-
-  $("#runTaskBtn").click(function(e){
-    
-    e.preventDefault();
-
-
-    $.ajax({url: "/task/run/{{id}}", success: function(result){
-         $("#result").html(result);
-     }});
-  });
-</script>
