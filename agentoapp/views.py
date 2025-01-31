@@ -7,6 +7,8 @@ from django.http import StreamingHttpResponse
 import json
 from django.forms.models import model_to_dict
 
+from ollama import ListResponse, list
+
 def index(request):
     tasks = Task.objects.all().values()
     return render(request,'agentoapp/index.html',context={'tasks':tasks})
@@ -43,6 +45,7 @@ def task(request,action,id):
             
     if action == 'run':
         print("RUN")
+        model = request.GET.get('model', 'llama3.2:latest')
         answer = ''
         for st in st_list:
             tools = []
@@ -55,10 +58,12 @@ def task(request,action,id):
                     t = model_to_dict(at.tool)
                     tools.append(t)
                 print(tools)
-                answer = prompt(p,tools)
+                answer = prompt(p,tools,model)
         print(answer)
         return HttpResponse(answer)
-    return render(request,'agentoapp/task.html',context={'action':action,'id':id,'task':task,'st_list':st_list})
+    response: ListResponse = list()
+    available_models = [model.model for model in response.models]
+    return render(request,'agentoapp/task.html',context={'action':action,'id':id,'task':task,'st_list':st_list,'available_models':available_models})
 
 def subtask(request,taskId,step,action):
     print(action,taskId,step)
@@ -147,7 +152,11 @@ def tools(request,action,id):
     
 
     existing_tools = Tool.objects.all()
-    return render(request,'agentoapp/tool.html',context={'action':action,'id':id,'back_url':back_url,'existing_tools':existing_tools,'tool':tool})
+
+    response: ListResponse = list()
+    available_models = [model.model for model in response.models]
+
+    return render(request,'agentoapp/tool.html',context={'action':action,'id':id,'back_url':back_url,'existing_tools':existing_tools,'tool':tool,'available_models':available_models})
 
 def stream_llm(prompt):
     # https://dev.to/epam_india_python/harnessing-the-power-of-django-streaminghttpresponse-for-efficient-web-streaming-56jh

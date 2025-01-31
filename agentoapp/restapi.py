@@ -31,15 +31,18 @@ def initialize_db():
 @app.route('/orders/get_stock/<string:item_name>/', methods=['GET'])
 def get_stock(item_name):
     """Check stock for a specific item."""
+    print(item_name)
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
+        sql = f"SELECT * FROM orders"
+        cursor.execute(sql)
+        print(cursor.fetchone(),'-------')
         cursor.execute('''
             SELECT quantity FROM stock WHERE item_name = ?
         ''', (item_name,))
         row = cursor.fetchone()
-
+        
     if row:
-
         return jsonify({"stock_quantity": row[0]}), 200
     return jsonify({"stock_exists": "Stock does not exists"}), 200
 
@@ -50,7 +53,7 @@ def add_order():
     item_name = data.get('item_name')
     quantity = data.get('quantity')
     price_per_item = data.get('price_per_item')
-
+    print(data)
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute('''

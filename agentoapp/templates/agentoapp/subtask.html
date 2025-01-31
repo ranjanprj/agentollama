@@ -119,7 +119,7 @@
     <!-- Header -->
     <header class="page-header">
         <div class="d-flex justify-content-between align-items-center">
-            <h1 class="h2 mb-0">Agents on Tasks</h1>
+            <h1 class="h2 mb-0">Agent on Sub Task</h1>
             <div class="d-flex gap-2">
                 <a class="btn btn-success" href="/tools/create/0">
                     <i class="bi bi-plus-lg"></i> Tool
@@ -134,14 +134,14 @@
 
     <!-- Main Content -->
     <main class="form-container">
-        <h2 class="h4 mb-4">Create/Edit Sub Task</h2>
+        <h2 class="h4 mb-4">Create/Edit Agent's Sub Task</h2>
         {% if subtask %}
         <form method="POST" action="/task/{{taskId}}/subtask/{{subtask.id}}/edit" class="needs-validation">
         {% else %}
         <form method="POST" action="/task/{{taskId}}/subtask/0/create" class="needs-validation">
         {% endif %}
         
-            <input type="hidden" name="csrfmiddlewaretoken" value="Tjlz2Pcfo54pVSqrvnZLwYPKfPzHWX0jRAoARkU3pENGwqHzvmm9CMJcqdIEqnIu">
+            {% csrf_token %}
             
             <div class="form-group">
                 <label for="subTaskName" class="form-label">Sub Task Name</label>
@@ -157,7 +157,7 @@
             </div>
 
             <div class="form-group">
-                <label for="context" class="form-label">Context</label>
+                <label for="context" class="form-label">[Agent]  Context</label>
                 <textarea 
                     class="form-control" 
                     id="context"
@@ -169,7 +169,7 @@
             </div>
 
             <div class="form-group">
-                <label for="instruction" class="form-label">Instructions</label>
+                <label for="instruction" class="form-label">[Agent]  Instructions</label>
                 <textarea 
                     class="form-control" 
                     id="instruction"
@@ -180,7 +180,7 @@
             </div>
 
             <div class="form-group">
-                <label for="outputFormatInstruction" class="form-label">Output Format Instructions</label>
+                <label for="outputFormatInstruction" class="form-label">[Agent]  Output Format Instructions</label>
                 <textarea 
                     class="form-control" 
                     id="outputFormatInstruction"
@@ -195,7 +195,7 @@
             
             <div class="tools-section">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <label class="form-label mb-0">Tools</label>
+                    <label class="form-label mb-0">[Agent] Tools</label>
                     <div class="input-group" style="max-width: 400px;">
                         <select class="form-select" id="toolSelect" name="tool">
                             <option value="">Select a tool...</option>

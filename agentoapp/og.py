@@ -5,9 +5,7 @@ import types
 from ollama import chat
 from ollama import ChatResponse
 
-l31 = 'llama3.1'
-l32 = 'llama3.2'
-model = l31
+
 
 def dynamically_load_tools(tools):
     """
@@ -42,7 +40,8 @@ def dynamically_load_tools(tools):
     
     return available_functions, tool_definitions
 
-def prompt(prompt_text, tools):
+def prompt(prompt_text, tools,model):
+    final_answer = "NO ANSWER"
     # Dynamically load tools
     tool_definitions = []
     available_functions: Dict[str, Callable] = {}
@@ -87,12 +86,16 @@ def prompt(prompt_text, tools):
       final_response = chat(model, messages=messages)
       print('Final response:', final_response.message.content)
       final_answer = final_response.message.content 
+      
     else:
       print('No tool calls returned from model')
     
     return final_answer
 
 if __name__ == '__main__':
+  l31 = 'llama3.1'
+  l32 = 'llama3.2'
+  model = l31
   #  p = '''
   #       You are an Order Management agent that is good at reading carefully the and adding
   #       an order with following details.  Instructions: add an order for Item name ITEM-C, 
@@ -168,5 +171,5 @@ def add_two_numbers(a: int, b: int) -> int:
   
   p = """you are an expert matheticians and is very accurate and does not hallucinate and make up things, 
       convert the words into numbers and perform the following , add two and three and then subtract five from the result"""
-  result = prompt(p,tools)
+  result = prompt(p,tools,model)
   print(result)

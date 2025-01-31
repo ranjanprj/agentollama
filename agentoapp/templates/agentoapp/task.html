@@ -150,9 +150,22 @@
         </div>
 
         <div class="mt-4">
-            <a id="runTaskBtn" href="/task/run/{{id}}" class="btn btn-success">
-                <i class="bi bi-play-fill"></i> Run Task
-            </a>
+            <div class="row g-2 align-items-end mb-3">
+                <div class="col-md-6">
+                    <label for="modelSelect" class="form-label">Select Model</label>
+                    <select class="form-control" id="modelSelect" name="model">
+                        <option></option>
+                        {% for model in available_models %}
+                        <option value="{{ model }}" {% if model == "llama3.1:latest" %}  selected="selected" {%endif%}>{{ model }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <a id="runTaskBtn" href="/task/run/{{id}}" class="btn btn-success">
+                        <i class="bi bi-play-fill"></i> Run Task
+                    </a>
+                </div>
+            </div>
             <div id="result" class="mt-3 card">
                 <div class="card-body"></div>
             </div>
@@ -200,11 +213,13 @@
             e.preventDefault();
             const $btn = $(this);
             const $result = $("#result .card-body");
+            const selectedModel = $("#modelSelect").val();
             
             $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Running...');
             
             $.ajax({
-                url: "/task/run/{{id}}",
+                url: "/task/run/{{id}}?model="+selectedModel,
+                method: 'GET',            
                 success: function(result) {
                     $result.html(result);
                 },
