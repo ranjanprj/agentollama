@@ -1,0 +1,6 @@
+<h4>View Logs</h4>
+<h3>Task: {{task_run.task.name}}</h3>
+
+{% for task_log in task_logs %}
+    {{task_log.log|safe}}
+{% endfor %}

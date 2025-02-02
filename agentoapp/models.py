@@ -5,6 +5,8 @@ class Task(models.Model):
     name = models.CharField(max_length=100)
     description = models.CharField(max_length=100)
 
+  
+
     def __str__(self):
         return self.name
 
@@ -23,7 +25,7 @@ class SubTask(models.Model):
     outputFormatInstruction = models.CharField(max_length=2048)
 
     step = models.IntegerField()
-
+   
 
     def __str__(self):
         return self.name
@@ -43,3 +45,13 @@ class SubTaskTool(models.Model):
 
     def __str__(self):
         return f"{self.subtask}  {self.tool}"
+
+class TaskRun(models.Model):
+    task = models.ForeignKey(Task,on_delete=models.DO_NOTHING)
+    current_step = models.IntegerField(default=-1)
+    current_step_status = models.CharField(max_length=24,choices=(("RUNNING",'Running'),('COMPLETED','Completed'),('FAILED','Failed')))
+
+    
+class TaskLog(models.Model):
+    task_run = models.ForeignKey(TaskRun,on_delete=models.DO_NOTHING)    
+    log = models.TextField()

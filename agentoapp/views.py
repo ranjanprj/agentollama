@@ -1,9 +1,9 @@
 from django.shortcuts import render,redirect,HttpResponse,HttpResponseRedirect
-from .models import SubTaskTool, Task,SubTask,Tool
+from .models import SubTaskTool, Task,SubTask,Tool, TaskRun, TaskLog
 # Create your views here.
 from .og import prompt
 from ollama import chat
-from django.http import StreamingHttpResponse
+from django.http import StreamingHttpResponse,JsonResponse
 import json
 from django.forms.models import model_to_dict
 
@@ -16,6 +16,30 @@ def index(request):
 def task(request,action,id):
     print(action,id)
     print(request.POST)
+
+    if action == 'viewlogs':
+        # take top running job
+        task_run = TaskRun.objects.filter(task=id).order_by('-id').first()
+        task_logs = TaskLog.objects.filter(task_run=task_run)
+        print(task_run)
+        context = {
+            'current_task_run_id': task_run.id,
+            'current_step': task_run.current_step,
+            'status': task_run.current_step_status,
+            'task_run':task_run,
+            'task_logs': task_logs
+        }
+        return render(request,'agentoapp/viewlogs.html',context=context)
+ 
+    if action == 'status':       
+        # take top running job
+        task_run = TaskRun.objects.filter(task=id).order_by('-id').first()
+        print(task_run)
+        return JsonResponse({
+            'current_task_run_id': task_run.id,
+            'current_step': task_run.current_step,
+            'status': task_run.current_step_status
+        })
     if action == 'create':
         taskName = request.POST.get('taskName','')
         taskDescription = request.POST.get('taskDescription','')
@@ -29,7 +53,6 @@ def task(request,action,id):
         task = Task.objects.get(id=id)
     # get steps asc
         # subtasks = SubTask.objects.filter(belongs_to=id).order_by('step').values()
-        
         for st in SubTask.objects.filter(belongs_to=id).order_by('step'):
             print(st)  
             current_step = st.step
@@ -45,24 +68,46 @@ def task(request,action,id):
             
     if action == 'run':
         print("RUN")
+        task_run = TaskRun.objects.create(task=task)
         model = request.GET.get('model', 'llama3.2:latest')
         answer = ''
         for st in st_list:
+            
+            task_run.current_step = st['step']
+            task_run.current_step_status = 'RUNNING'
+            task_run.save()
             tools = []
             for sb in st['subtasks']:
+                task_log = TaskLog.objects.create(task_run=task_run)
+                log = '<p>===========================================================</p>'
+                log += f'<p> Running Task {task}</p>'
                 p = f"{sb.context} {sb.instruction.replace('previous_result',answer)}  {sb.outputFormatInstruction} "
                 assigned_tools = SubTaskTool.objects.filter(subtask=sb.id)
                 for at in assigned_tools:
-                    print(at.tool,'================')
+                    log += f'<p> Assigned tools {at}</p>'
                     # t = Tool.objects.get(id=at.tool)
                     t = model_to_dict(at.tool)
+                    log += f'<p> Tool Defininition: {at.tool} </p>'
                     tools.append(t)
                 print(tools)
-                answer = prompt(p,tools,model)
+                log += f'<p> Prompt {p}</p>'
+                log += f'<p> Model  {model}</p>'
+
+                answer,log = prompt(p,tools,model)
+
+                log += f'<p> Answer {answer}</p>'
+                task_log.log = log
+                task_log.save()
+        task_run = TaskRun.objects.get(id=task_run.id)
+        print("closing task run",task_run)
+        task_run.current_step = -1
+        task_run.current_step_status = 'COMPLETED'
+        task_run.save()
         print(answer)
         return HttpResponse(answer)
     response: ListResponse = list()
     available_models = [model.model for model in response.models]
+    print(available_models)
     return render(request,'agentoapp/task.html',context={'action':action,'id':id,'task':task,'st_list':st_list,'available_models':available_models})
 
 def subtask(request,taskId,step,action):
@@ -113,6 +158,7 @@ def subtask(request,taskId,step,action):
         
     return render(request,'agentoapp/subtask.html',context={'action':action,'taskId':taskId,'step':step,'subtask':subtask,'tools':tools,'assigned_tools':assigned_tools})
     
+
 def tools(request,action,id):
     print(action,id)
     print(request.POST)

@@ -41,6 +41,7 @@ def dynamically_load_tools(tools):
     return available_functions, tool_definitions
 
 def prompt(prompt_text, tools,model):
+    log = ''
     final_answer = "NO ANSWER"
     # Dynamically load tools
     tool_definitions = []
@@ -59,6 +60,7 @@ def prompt(prompt_text, tools,model):
     # 'get_stock': get_stock
     # } 
     messages = [{'role': 'user', 'content': prompt_text}]
+    log += f'<p>{messages}</p>'
     
     # Use dynamically loaded tools in chat
     response = chat(
@@ -73,8 +75,10 @@ def prompt(prompt_text, tools,model):
             if function_to_call := available_functions.get(tool.function.name):
                 output = function_to_call(**tool.function.arguments)
                 print('Function output:', output)
+                log += f'<p>{output}</p>'
             else:
                 print('Function', tool.function.name, 'not found')  
+                log += f'<p>Function, {tool.function.name}, not found</p>'
                 print(output)
   # Only needed to chat with the model using the tool call results
     if response.message.tool_calls:
@@ -82,6 +86,7 @@ def prompt(prompt_text, tools,model):
       messages.append(response.message)
       messages.append({'role': 'tool', 'content': str(output), 'name': tool.function.name})
       print(messages) 
+      log += f'<p>Messages, {messages}</p>'
       # Get final response from model with function outputs
       final_response = chat(model, messages=messages)
       print('Final response:', final_response.message.content)
@@ -89,8 +94,9 @@ def prompt(prompt_text, tools,model):
       
     else:
       print('No tool calls returned from model')
+      log += f'<p>No tool calls returned from model</p>'
     
-    return final_answer
+    return final_answer,log
 
 if __name__ == '__main__':
   l31 = 'llama3.1'
