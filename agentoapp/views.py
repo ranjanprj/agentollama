@@ -40,7 +40,7 @@ def task(request,action,id):
             'current_step': task_run.current_step,
             'status': task_run.current_step_status
         })
-    if action == 'create':
+    if action == 'create' and request.method == 'POST':
         taskName = request.POST.get('taskName','')
         taskDescription = request.POST.get('taskDescription','')
         print(taskName,taskDescription)
@@ -81,7 +81,10 @@ def task(request,action,id):
                 task_log = TaskLog.objects.create(task_run=task_run)
                 log = '<p>===========================================================</p>'
                 log += f'<p> Running Task {task}</p>'
-                p = f"{sb.context} {sb.instruction.replace('previous_result',answer)}  {sb.outputFormatInstruction} "
+                p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)}   "
+                
+                output_format = json.loads(sb.outputFormatInstruction)  
+                print(output_format)
                 assigned_tools = SubTaskTool.objects.filter(subtask=sb.id)
                 for at in assigned_tools:
                     log += f'<p> Assigned tools {at}</p>'
@@ -93,7 +96,7 @@ def task(request,action,id):
                 log += f'<p> Prompt {p}</p>'
                 log += f'<p> Model  {model}</p>'
 
-                answer,log = prompt(p,tools,model)
+                answer,log = prompt(p,tools,output_format,model)
 
                 log += f'<p> Answer {answer}</p>'
                 task_log.log = log

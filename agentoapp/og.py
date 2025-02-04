@@ -40,7 +40,10 @@ def dynamically_load_tools(tools):
     
     return available_functions, tool_definitions
 
-def prompt(prompt_text, tools,model):
+def prompt(prompt_text, tools,output_format,model):
+    print("XXXXXXXXXXXXXXXXXXXXXXXXXX  INSIDE PROMPT FUNCTION XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+    print(prompt_text)
+    print(output_format)
     log = ''
     final_answer = "NO ANSWER"
     # Dynamically load tools
@@ -61,12 +64,13 @@ def prompt(prompt_text, tools,model):
     # } 
     messages = [{'role': 'user', 'content': prompt_text}]
     log += f'<p>{messages}</p>'
+    log += f'<p>{output_format}</p>'
     
     # Use dynamically loaded tools in chat
     response = chat(
         model,  # Assuming 'model' is defined globally
         messages=messages,
-        tools=tool_definitions,
+        tools=tool_definitions       
     )
     
     # Process tool calls
@@ -88,7 +92,7 @@ def prompt(prompt_text, tools,model):
       print(messages) 
       log += f'<p>Messages, {messages}</p>'
       # Get final response from model with function outputs
-      final_response = chat(model, messages=messages)
+      final_response = chat(model, messages=messages,format=output_format)
       print('Final response:', final_response.message.content)
       final_answer = final_response.message.content 
       
@@ -101,7 +105,7 @@ def prompt(prompt_text, tools,model):
 if __name__ == '__main__':
   l31 = 'llama3.1'
   l32 = 'llama3.2'
-  model = l31
+  model = l32
   #  p = '''
   #       You are an Order Management agent that is good at reading carefully the and adding
   #       an order with following details.  Instructions: add an order for Item name ITEM-C, 
@@ -174,8 +178,8 @@ def add_two_numbers(a: int, b: int) -> int:
   print(add_two_numbers(1,2))
   print(tool_definitions)
   print(available_functions)
-  
+  output_format =   {"properties": {"total": {"title": "Total", "type": "integer"}}, "required": ["total"], "title": "Sum", "type": "object"}
   p = """you are an expert matheticians and is very accurate and does not hallucinate and make up things, 
       convert the words into numbers and perform the following , add two and three and then subtract five from the result"""
-  result = prompt(p,tools,model)
+  result = prompt(p,tools,output_format,model)
   print(result)
