@@ -121,10 +121,32 @@
                                             Step {{st.step}}
                                         </a>
                                     </h3>
-                                    <a href="/task/{{id}}/step/{{st.step}}/addsubtask"
-                                        class="btn btn-outline-success btn-sm">
-                                        <i class="bi bi-plus-lg"></i> Add Subtask
-                                    </a>
+
+                                    <div class="dropdown">
+                                        <button class="btn btn-secondary dropdown-toggle" type="button"
+                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                            Add Agent/RAG/For Loop
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <a href="/task/{{id}}/step/{{st.step}}/toolsubtask" class="dropdown-item">
+                                                <i class="bi bi-plus-lg"></i> Add Tool Agent
+                                            </a>
+                                            </li>
+                                            <li>
+                                                <a href="/task/{{id}}/step/{{st.step}}/ragsubtask"
+                                                    class="dropdown-item">
+                                                    <i class="bi bi-plus-lg"></i> Add RAG Agent
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a href="/task/{{id}}/step/{{st.step}}/loopsubtask"
+                                                    class="dropdown-item">
+                                                    <i class="bi bi-plus-lg"></i> Add For Loop
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+
                                 </div>
 
                                 <div class="collapse show" id="step{{st.step}}">
@@ -158,13 +180,11 @@
                     <select class="form-control" id="modelSelect" name="model">
                         <option></option>
                         {% for model in available_models %}
-                        <option 
-                            value="{{ model }}" 
-                            {% if model == "llama3.1:latest" %} selected="selected" {%endif%}>
-                           {{ model }}
+                        <option value="{{ model }}" {% if model == "llama3.1:latest" %} selected="selected" {%endif%}>
+                            {{ model }}
                         </option>
                         {% endfor %}
-                    </select> 
+                    </select>
                 </div>
                 <div class="col-md-6">
                     <a id="runTaskBtn" href="/task/run/{{id}}" class="btn btn-success">
@@ -174,7 +194,7 @@
                         <i class="bi bi-play-fill"></i> View Logs
                     </a>
                 </div>
-         
+
             </div>
             <div id="result" class="mt-3 card">
                 <div class="card-body"></div>
@@ -205,10 +225,31 @@
                                     Step ${id}
                                 </a>
                             </h3>
-                            <a href="/task/{{id}}/step/${id}/addsubtask" 
-                                class="btn btn-outline-success btn-sm">
-                                <i class="bi bi-plus-lg"></i> Add Subtask
-                            </a>
+                      
+                                    <div class="dropdown">
+                                        <button class="btn btn-secondary dropdown-toggle" type="button"
+                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                            Add Agent/RAG/For Loop
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <a href="/task/{{id}}/step/${id}/toolsubtask" class="dropdown-item">
+                                                <i class="bi bi-plus-lg"></i> Add Tool Agent
+                                            </a>
+                                            </li>
+                                            <li>
+                                                <a href="/task/{{id}}/step/${id}/ragsubtask"
+                                                    class="dropdown-item">
+                                                    <i class="bi bi-plus-lg"></i> Add RAG Agent
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a href="/task/{{id}}/step/${id}/loopsubtask"
+                                                    class="dropdown-item">
+                                                    <i class="bi bi-plus-lg"></i> Add For Loop
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
                         </div>
                         <div class="collapse show" id="step${id}">
                             <div class="ps-4"></div>
@@ -256,8 +297,8 @@
                             .closest('.step-container')
                             .addClass("bg-light border-success");
 
-                         
-                            
+
+
                     }
 
                     // If task is complete, stop polling
@@ -285,7 +326,7 @@
         document.head.appendChild()
     </script>
 
-    
+
 </body>
 
 </html>

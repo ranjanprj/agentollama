@@ -1,8 +1,7 @@
 
 from django.contrib import admin
 from django.urls import path, include
-from .views import index,task,subtask,tools,generate_code
-
+from .views import index,task,subtask,tools,generate_code,knowledgerep
 app_name  = 'agentoapp'
 
 urlpatterns = [    
@@ -12,5 +11,8 @@ urlpatterns = [
     path('task/<int:taskId>/subtask/<int:step>/<str:action>', name='subtask',view=subtask),
     path('tools/<str:action>/<int:id>', name='tools',view=tools),
     path('genai', name='generate_code',view=generate_code),
+    path('knowledgerep/<str:action>/<int:id>', name='knowledgerep',view=knowledgerep),
+    
+
 
 ]
