@@ -21,7 +21,6 @@ from llama_index.core import StorageContext
 
 import chromadb
 from llama_index.vector_stores.chroma import ChromaVectorStore
-import json_repair
 
 
 def index(request):
@@ -64,7 +63,6 @@ def task(request,action,id):
     task = None
     steps = None
     st_list = []
-    subtasks = None
     if id:
         task = Task.objects.get(id=id)
     # get steps asc
@@ -80,8 +78,7 @@ def task(request,action,id):
             if not found:
                 st_list.append({'step':st.step, 'subtasks':[st]})
                 found = False
-        subtasks = SubTask.objects.filter(belongs_to=id).order_by('step')
-        print(subtasks)
+            
             
     if action == 'run':
         print("RUN")
@@ -91,78 +88,34 @@ def task(request,action,id):
         loop_st_found = False
         loop_previous_result = ''
         loop_st = []
-        subtasks = SubTask.objects.filter(belongs_to=id).order_by('step')
-        for sb in subtasks:            
-            task_run.current_step = st.step
+        for st in st_list:            
+            task_run.current_step = st['step']
             task_run.current_step_status = 'RUNNING'
             task_run.save()
             tools = []
-            
-            task_log = TaskLog.objects.create(task_run=task_run)
-            log = '<p>===========================================================</p>'
-            log += f'<p> Running Task {task}</p>'
-            
-            if loop_st_found:                    
-                loop_st.append(sb)
-            if sb.type == 'LOOP':
-                loop_previous_result = answer
-                loop_st_found = True              
-            if sb.type == 'RAG' and not loop_st_found:
-                p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)} Output Format: {sb.outputFormatInstruction}"
-                answer = run_rag(sb.knowledgerep.id,p,model)                    
-                print(answer)
-            
-            if sb.type == 'TOOL' and not loop_st_found:
-                p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)}   "
-                output_format = False
-                if sb.outputFormatInstruction != '':
-                    output_format = json.loads(sb.outputFormatInstruction)  
+            for sb in st['subtasks']:
+                task_log = TaskLog.objects.create(task_run=task_run)
+                log = '<p>===========================================================</p>'
+                log += f'<p> Running Task {task}</p>'
 
-                print(output_format)
-                assigned_tools = SubTaskTool.objects.filter(subtask=sb.id)
-                for at in assigned_tools:
-                    log += f'<p> Assigned tools {at}</p>'
-                    # t = Tool.objects.get(id=at.tool)
-                    t = model_to_dict(at.tool)
-                    log += f'<p> Tool Defininition: {at.tool} </p>'
-                    tools.append(t)
-                print(tools)
-                log += f'<p> Prompt {p}</p>'
-                log += f'<p> Model  {model}</p>'
-                answer,log = prompt(p,tools,output_format,model)
-                log += f'<p> Answer {answer}</p>'
-                task_log.log = log
-                task_log.save()
-        # Execute LOOP SUBTASK
-        print("====================== LOOP SUBTASKS ====================")
-        print(loop_st)
-        print(loop_previous_result)
-        # loop_previous_result = json.loads(loop_previous_result)
-        
-        loop_previous_result = json_repair.loads(loop_previous_result)
-        print(loop_previous_result)
-        for result in loop_previous_result['previous_result']:
-            # Loop over and run all tasks 
-            answer = result
-            print("====================== LOOP INPUT ANSWER  ====================",answer)
-            for sb in loop_st:
-                print("====================== LOOP SB ANSWER  ====================",answer)
-                if sb.type == 'RAG':
-                    p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)} Output Format: {sb.outputFormatInstruction}"
-                    if sb.knowledgerep.name != 'Empty':
-                        answer = run_rag(sb.knowledgerep.id,p,model)                    
-                        print(answer)
-                    else:
-                        output_format = False
-                        answer,log = prompt(p,tools,output_format,model)
                 
-                if sb.type == 'TOOL':
+                if loop_st_found:                    
+                    loop_st.append(sb)
+
+                if sb.type == 'LOOP':
+                    loop_previous_result = answer
+                    loop_st_found = True              
+
+                if sb.type == 'RAG' and not loop_st_found:
+                    p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)} Output Format: {sb.outputFormatInstruction}"
+                    answer = run_rag(sb.knowledgerep.id,p,model)                    
+                    print(answer)
+                
+
+                if sb.type == 'TOOL' and not loop_st_found:
                     p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)}   "
                     
-                    output_format = False
-                    if sb.outputFormatInstruction != '':
-                        output_format = json.loads(sb.outputFormatInstruction)  
-
+                    output_format = json.loads(sb.outputFormatInstruction)  
                     print(output_format)
                     assigned_tools = SubTaskTool.objects.filter(subtask=sb.id)
                     for at in assigned_tools:
@@ -175,16 +128,63 @@ def task(request,action,id):
                     log += f'<p> Prompt {p}</p>'
                     log += f'<p> Model  {model}</p>'
 
-
                     answer,log = prompt(p,tools,output_format,model)
-
 
                     log += f'<p> Answer {answer}</p>'
                     task_log.log = log
                     task_log.save()
 
 
-        print("====================== FINAL ANSWER ====================",answer)
+        # Execute LOOP SUBTASK
+        for st in st_list:            
+            task_run.current_step = st['step']
+            task_run.current_step_status = 'RUNNING'
+            task_run.save()
+            tools = []
+            for sb in st['subtasks']:
+                task_log = TaskLog.objects.create(task_run=task_run)
+                log = '<p>===========================================================</p>'
+                log += f'<p> Running Task {task}</p>'
+
+                
+                if loop_st_found:                    
+                    loop_st.append(sb)
+
+                if sb.type == 'LOOP':
+                    loop_previous_result = answer
+                    loop_st_found = True              
+
+                if sb.type == 'RAG' and not loop_st_found:
+                    p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)} Output Format: {sb.outputFormatInstruction}"
+                    answer = run_rag(sb.knowledgerep.id,p,model)                    
+                    print(answer)
+                
+
+                if sb.type == 'TOOL' and not loop_st_found:
+                    p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)}   "
+                    
+                    output_format = json.loads(sb.outputFormatInstruction)  
+                    print(output_format)
+                    assigned_tools = SubTaskTool.objects.filter(subtask=sb.id)
+                    for at in assigned_tools:
+                        log += f'<p> Assigned tools {at}</p>'
+                        # t = Tool.objects.get(id=at.tool)
+                        t = model_to_dict(at.tool)
+                        log += f'<p> Tool Defininition: {at.tool} </p>'
+                        tools.append(t)
+                    print(tools)
+                    log += f'<p> Prompt {p}</p>'
+                    log += f'<p> Model  {model}</p>'
+
+                    answer,log = prompt(p,tools,output_format,model)
+
+                    log += f'<p> Answer {answer}</p>'
+                    task_log.log = log
+                    task_log.save()
+  
+
+
+
         task_run = TaskRun.objects.get(id=task_run.id)
         print("closing task run",task_run)
         task_run.current_step = -1
@@ -195,10 +195,10 @@ def task(request,action,id):
     response: ListResponse = list()
     available_models = [model.model for model in response.models]
     print(available_models)
-    return render(request,'agentoapp/task.html',context={'action':action,'id':id,'task':task,'st_list':st_list,'available_models':available_models,'subtasks':subtasks})
+    return render(request,'agentoapp/task.html',context={'action':action,'id':id,'task':task,'st_list':st_list,'available_models':available_models})
 
 def subtask(request,taskId,step,action):
-    print(action,taskId,'step',step)
+    print(action,taskId,step)
    
     if action == 'create':
         subTaskName = request.POST.get('subTaskName','')
@@ -206,16 +206,10 @@ def subtask(request,taskId,step,action):
         instruction = request.POST.get('instruction','')
         outputFormatInstruction = request.POST.get('outputFormatInstruction','')
         type = request.POST.get('type','')
-        
-        
-        id = int(request.POST.get('knowledgerep',None))
-        knowledgerep = KnowledgeRep.objects.get(id=id)
-
-            
+        knowledgerep = request.POST.get('knowledgerep','')
         print(taskId,step,action)
         print(subTaskName,context,instruction,outputFormatInstruction)
         task = Task.objects.get(id=taskId)
-        
         subTask = SubTask.objects.create(belongs_to=task,name=subTaskName,context=context,instruction=instruction,outputFormatInstruction=outputFormatInstruction,step=step,type=type,knowledgerep=knowledgerep)
         return redirect(f'/task/edit/{taskId}')
         # Task.objects.create(name=taskName,description=taskDescription)
@@ -246,8 +240,7 @@ def subtask(request,taskId,step,action):
         subtask.context = context
         subtask.instruction = instruction
         subtask.outputFormatInstruction = outputFormatInstruction
-        if knowledgerep:
-            subtask.knowledgerep = KnowledgeRep.objects.get(id=knowledgerep) 
+        subtask.knowledgerep = KnowledgeRep.objects.get(id=knowledgerep) 
         subtask.save()
         print("POST")
 

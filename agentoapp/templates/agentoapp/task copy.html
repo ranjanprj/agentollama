@@ -59,11 +59,6 @@
         [aria-expanded="true"] .collapse-icon {
             transform: rotate(90deg);
         }
-
-        .LOOP{
-            margin-left:5em;
-            color:red;
-        }
     </style>
 </head>
 
@@ -113,10 +108,10 @@
                         <h2 class="h4 mb-2">{{task.name}}</h2>
                         <p class="text-muted">{{task.description}}</p>
                     </div>
+
                     <div id="subTasks">
-                       
-                        {% for st in subtasks %}                                                  
-                        <div class="step-item {{st.type}}">
+                        {% for st in st_list %}
+                        <div class="step-item">
                             <div class="step-container">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                     <h3 class="h5 mb-0">
@@ -156,12 +151,14 @@
 
                                 <div class="collapse show" id="step{{st.step}}">
                                     <div class="ps-4">
+                                        {% for sbt in st.subtasks %}
                                         <div class="mb-2">
-                                            <a href="/task/{{id}}/step/{{st.id}}/edit" class="subtask-link">
+                                            <a href="/task/{{id}}/step/{{sbt.id}}/edit" class="subtask-link">
                                                 <i class="bi bi-circle"></i>
-                                                {{st.name}}
+                                                {{sbt.name}}
                                             </a>
                                         </div>
+                                        {% endfor %}
                                     </div>
                                 </div>
                             </div>
@@ -215,7 +212,6 @@
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 
     <script>
-        $( "div.LOOP" ).nextAll().css( "margin-left","5em");
         $("#addStep").click(function (e) {
             const id = $("#subTasks").children().length;
             const task = `
@@ -262,7 +258,6 @@
                 </div>
             `;
             $("#subTasks").append(task);
-            $( "div.LOOP" ).nextAll().css( "margin-left","5em");
         });
 
         $("#runTaskBtn").click(function (e) {
@@ -316,7 +311,7 @@
                     clearInterval(pollInterval);
                 }
             });
-        }, 5000000);  // Poll every 5 seconds
+        }, 5000);  // Poll every 5 seconds
 
         // Add CSS for highlighting
         const style = document.createElement('style');
@@ -329,8 +324,6 @@
 `;
         document.head.appendChild(style);
         document.head.appendChild()
-
-     
     </script>
 
 

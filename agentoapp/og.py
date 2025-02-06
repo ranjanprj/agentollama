@@ -92,7 +92,11 @@ def prompt(prompt_text, tools,output_format,model):
       print(messages) 
       log += f'<p>Messages, {messages}</p>'
       # Get final response from model with function outputs
-      final_response = chat(model, messages=messages,format=output_format)
+      final_answer = None
+      if output_format:
+        final_response = chat(model, messages=messages,format=output_format)
+      else:
+         final_response = chat(model, messages=messages)
       print('Final response:', final_response.message.content)
       final_answer = final_response.message.content 
       

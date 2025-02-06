@@ -138,7 +138,7 @@
         {% if subtask %}
         <form method="POST" action="/task/{{taskId}}/subtask/{{subtask.id}}/edit" class="needs-validation">
         {% else %}
-        <form method="POST" action="/task/{{taskId}}/subtask/0/create" class="needs-validation">
+        <form method="POST" action="/task/{{taskId}}/subtask/{{step}}/create" class="needs-validation">
         {% endif %}
         
             {% csrf_token %}
