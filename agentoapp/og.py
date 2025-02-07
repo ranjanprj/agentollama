@@ -40,6 +40,36 @@ def dynamically_load_tools(tools):
     
     return available_functions, tool_definitions
 
+def prompt_rag(prompt_text,output_format,model):
+    print("XXXXXXXXXXXXXXXXXXXXXXXXXX  INSIDE PROMPT RAG FUNCTION XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+    print(prompt_text)
+    print(output_format)
+    log = ''
+    final_answer = "NO ANSWER"
+    # Dynamically load tools
+    messages = [{'role': 'user', 'content': prompt_text}]
+    log += f'<p>{messages}</p>'
+    log += f'<p>{output_format}</p>'
+    
+    # Use dynamically loaded tools in chat
+    response = None
+    if output_format:
+      response = chat(
+          model,  # Assuming 'model' is defined globally
+          messages=messages,
+          format=output_format
+          
+      )
+    else:
+      response = chat(
+          model,  # Assuming 'model' is defined globally
+          messages=messages,
+        
+      )
+    
+   
+    return response['message']['content'],log
+
 def prompt(prompt_text, tools,output_format,model):
     print("XXXXXXXXXXXXXXXXXXXXXXXXXX  INSIDE PROMPT FUNCTION XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
     print(prompt_text)
@@ -83,7 +113,7 @@ def prompt(prompt_text, tools,output_format,model):
             else:
                 print('Function', tool.function.name, 'not found')  
                 log += f'<p>Function, {tool.function.name}, not found</p>'
-                print(output)
+                
   # Only needed to chat with the model using the tool call results
     if response.message.tool_calls:
       # Add the function response to messages for the model to use
@@ -93,10 +123,11 @@ def prompt(prompt_text, tools,output_format,model):
       log += f'<p>Messages, {messages}</p>'
       # Get final response from model with function outputs
       final_answer = None
+      final_response = None
       if output_format:
         final_response = chat(model, messages=messages,format=output_format)
       else:
-         final_response = chat(model, messages=messages)
+        final_response = chat(model, messages=messages)
       print('Final response:', final_response.message.content)
       final_answer = final_response.message.content 
       

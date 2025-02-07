@@ -1,7 +1,7 @@
 from django.shortcuts import render,redirect,HttpResponse,HttpResponseRedirect
 from .models import SubTaskTool, Task,SubTask,Tool, TaskRun, TaskLog,KnowledgeRep,KnowledgeRepFiles
 # Create your views here.
-from .og import prompt
+from .og import prompt,prompt_rag
 from ollama import chat
 from django.http import StreamingHttpResponse,JsonResponse
 import json
@@ -109,8 +109,13 @@ def task(request,action,id):
                 loop_st_found = True              
             if sb.type == 'RAG' and not loop_st_found:
                 p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)} Output Format: {sb.outputFormatInstruction}"
-                answer = run_rag(sb.knowledgerep.id,p,model)                    
-                print(answer)
+                if sb.knowledgerep.name != 'Empty':
+                    answer = run_rag(sb.knowledgerep.id,p,model)                    
+                    print(answer)
+                else:
+                    output_format = False
+                    answer,log = prompt_rag(p,output_format,model)                   
+                    print(answer)
             
             if sb.type == 'TOOL' and not loop_st_found:
                 p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)}   "
@@ -154,7 +159,8 @@ def task(request,action,id):
                         print(answer)
                     else:
                         output_format = False
-                        answer,log = prompt(p,tools,output_format,model)
+                        answer,log = prompt_rag(p,output_format,model)
+                        print(answer)
                 
                 if sb.type == 'TOOL':
                     p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)}   "
@@ -208,8 +214,10 @@ def subtask(request,taskId,step,action):
         type = request.POST.get('type','')
         
         
-        id = int(request.POST.get('knowledgerep',None))
-        knowledgerep = KnowledgeRep.objects.get(id=id)
+        id = int(request.POST.get('knowledgerep',0))
+        knowledgerep = None
+        if id:            
+            knowledgerep = KnowledgeRep.objects.get(id=id)
 
             
         print(taskId,step,action)

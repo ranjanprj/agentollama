@@ -1,0 +1,3 @@
+Eicher Motors (EICHERMOT): Sentiment: NEUTRAL
+News: It seems like the API is returning a message that includes regulatory information, which is not directly related to stock data. I will try to fetch the stock data again.
+

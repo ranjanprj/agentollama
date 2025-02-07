@@ -53,7 +53,7 @@ class SubTask(models.Model):
     context = models.CharField(max_length=2048)
     instruction = models.CharField(max_length=2048)
     outputFormatInstruction = models.CharField(max_length=2048)
-    knowledgerep = models.ForeignKey(KnowledgeRep,on_delete=models.DO_NOTHING,null=True)
+    knowledgerep = models.ForeignKey(KnowledgeRep,on_delete=models.DO_NOTHING,null=True,blank=True)
 
     step = models.IntegerField()
    
