@@ -88,7 +88,7 @@ python manage.py runserver
 Pull requests are welcome! For major changes, please open an issue first to discuss your ideas.
 
 ## 📜 License
-MIT License. See `LICENSE` for details.
+Apache 2.0. See `LICENSE` for details.
 
 ## 💡 Connect
 For updates and discussions, follow me on [LinkedIn](https://www.linkedin.com/in/ranjanprj/).
