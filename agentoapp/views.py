@@ -86,7 +86,7 @@ def task(request,action,id):
     if action == 'run':
         print("RUN")
         task_run = TaskRun.objects.create(task=task)
-        model = request.GET.get('model', 'llama3.2:latest')
+        model = request.GET.get('model', 'llama3.1:latest')
         answer = ''
         loop_st_found = False
         loop_previous_result = ''
@@ -110,11 +110,11 @@ def task(request,action,id):
             if sb.type == 'RAG' and not loop_st_found:
                 p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)} Output Format: {sb.outputFormatInstruction}"
                 if sb.knowledgerep.name != 'Empty':
-                    answer = run_rag(sb.knowledgerep.id,p,model)                    
+                    answer = run_rag(sb.knowledgerep.id,p,sb.model)                    
                     print(answer)
                 else:
                     output_format = False
-                    answer,log = prompt_rag(p,output_format,model)                   
+                    answer,log = prompt_rag(p,output_format,sb.model)                   
                     print(answer)
             
             if sb.type == 'TOOL' and not loop_st_found:
@@ -143,51 +143,51 @@ def task(request,action,id):
         print(loop_st)
         print(loop_previous_result)
         # loop_previous_result = json.loads(loop_previous_result)
-        
-        loop_previous_result = json_repair.loads(loop_previous_result)
-        print(loop_previous_result)
-        for result in loop_previous_result['previous_result']:
-            # Loop over and run all tasks 
-            answer = result
-            print("====================== LOOP INPUT ANSWER  ====================",answer)
-            for sb in loop_st:
-                print("====================== LOOP SB ANSWER  ====================",answer)
-                if sb.type == 'RAG':
-                    p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)} Output Format: {sb.outputFormatInstruction}"
-                    if sb.knowledgerep.name != 'Empty':
-                        answer = run_rag(sb.knowledgerep.id,p,model)                    
-                        print(answer)
-                    else:
-                        output_format = False
-                        answer,log = prompt_rag(p,output_format,model)
-                        print(answer)
-                
-                if sb.type == 'TOOL':
-                    p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)}   "
+        if loop_st and loop_previous_result and len(loop_previous_result) > 0:
+            loop_previous_result = json_repair.loads(loop_previous_result)
+            print(loop_previous_result)
+            for result in loop_previous_result['previous_result']:
+                # Loop over and run all tasks 
+                answer = result
+                print("====================== LOOP INPUT ANSWER  ====================",answer)
+                for sb in loop_st:
+                    print("====================== LOOP SB ANSWER  ====================",answer)
+                    if sb.type == 'RAG':
+                        p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)} Output Format: {sb.outputFormatInstruction}"
+                        if sb.knowledgerep.name != 'Empty':
+                            answer = run_rag(sb.knowledgerep.id,p,sb.model)                    
+                            print(answer)
+                        else:
+                            output_format = False
+                            answer,log = prompt_rag(p,output_format,sb.model)
+                            print(answer)
                     
-                    output_format = False
-                    if sb.outputFormatInstruction != '':
-                        output_format = json.loads(sb.outputFormatInstruction)  
+                    if sb.type == 'TOOL':
+                        p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)}   "
+                        
+                        output_format = False
+                        if sb.outputFormatInstruction != '':
+                            output_format = json.loads(sb.outputFormatInstruction)  
 
-                    print(output_format)
-                    assigned_tools = SubTaskTool.objects.filter(subtask=sb.id)
-                    for at in assigned_tools:
-                        log += f'<p> Assigned tools {at}</p>'
-                        # t = Tool.objects.get(id=at.tool)
-                        t = model_to_dict(at.tool)
-                        log += f'<p> Tool Defininition: {at.tool} </p>'
-                        tools.append(t)
-                    print(tools)
-                    log += f'<p> Prompt {p}</p>'
-                    log += f'<p> Model  {model}</p>'
+                        print(output_format)
+                        assigned_tools = SubTaskTool.objects.filter(subtask=sb.id)
+                        for at in assigned_tools:
+                            log += f'<p> Assigned tools {at}</p>'
+                            # t = Tool.objects.get(id=at.tool)
+                            t = model_to_dict(at.tool)
+                            log += f'<p> Tool Defininition: {at.tool} </p>'
+                            tools.append(t)
+                        print(tools)
+                        log += f'<p> Prompt {p}</p>'
+                        log += f'<p> Model  {model}</p>'
 
 
-                    answer,log = prompt(p,tools,output_format,model)
+                        answer,log = prompt(p,tools,output_format,model)
 
 
-                    log += f'<p> Answer {answer}</p>'
-                    task_log.log = log
-                    task_log.save()
+                        log += f'<p> Answer {answer}</p>'
+                        task_log.log = log
+                        task_log.save()
 
 
         print("====================== FINAL ANSWER ====================",answer)
@@ -212,6 +212,7 @@ def subtask(request,taskId,step,action):
         instruction = request.POST.get('instruction','')
         outputFormatInstruction = request.POST.get('outputFormatInstruction','')
         type = request.POST.get('type','')
+        model = request.POST.get('model','llama3.1')
         
         
         id = int(request.POST.get('knowledgerep',0))
@@ -223,8 +224,9 @@ def subtask(request,taskId,step,action):
         print(taskId,step,action)
         print(subTaskName,context,instruction,outputFormatInstruction)
         task = Task.objects.get(id=taskId)
+
         
-        subTask = SubTask.objects.create(belongs_to=task,name=subTaskName,context=context,instruction=instruction,outputFormatInstruction=outputFormatInstruction,step=step,type=type,knowledgerep=knowledgerep)
+        subTask = SubTask.objects.create(belongs_to=task,name=subTaskName,context=context,instruction=instruction,outputFormatInstruction=outputFormatInstruction,step=step,type=type,knowledgerep=knowledgerep,model=model)
         return redirect(f'/task/edit/{taskId}')
         # Task.objects.create(name=taskName,description=taskDescription)
     subtask = None
@@ -239,6 +241,7 @@ def subtask(request,taskId,step,action):
         outputFormatInstruction = request.POST.get('outputFormatInstruction','')
         selectedTools =  request.POST.get('selectedTools','')
         knowledgerep = request.POST.get('knowledgerep','')
+        model = request.POST.get('model','llama3.1')
         # print(type(selectedTools),selectedTools,selectedTools=='')
         if selectedTools != '':
             selectedTools = [int(t) for t in selectedTools.split(',')]
@@ -254,6 +257,7 @@ def subtask(request,taskId,step,action):
         subtask.context = context
         subtask.instruction = instruction
         subtask.outputFormatInstruction = outputFormatInstruction
+        subtask.model = model
         if knowledgerep:
             subtask.knowledgerep = KnowledgeRep.objects.get(id=knowledgerep) 
         subtask.save()
@@ -271,10 +275,9 @@ def subtask(request,taskId,step,action):
     else:
         page = action
 
-    print("------------")
-    print(page)
-    print(knowledgereps)
-    return render(request,f'agentoapp/{page}.html',context={'action':action,'taskId':taskId,'step':step,'subtask':subtask,'tools':tools,'assigned_tools':assigned_tools,'knowledgereps':knowledgereps})
+    response: ListResponse = list()
+    available_models = [model.model for model in response.models]
+    return render(request,f'agentoapp/{page}.html',context={'action':action,'taskId':taskId,'step':step,'subtask':subtask,'tools':tools,'assigned_tools':assigned_tools,'knowledgereps':knowledgereps,'available_models':available_models})
     
 
 def tools(request,action,id):
@@ -322,16 +325,18 @@ def tools(request,action,id):
 
     return render(request,'agentoapp/tool.html',context={'action':action,'id':id,'back_url':back_url,'existing_tools':existing_tools,'tool':tool,'available_models':available_models})
 
-def stream_llm(prompt):
+def stream_llm(prompt,model):
     # https://dev.to/epam_india_python/harnessing-the-power-of-django-streaminghttpresponse-for-efficient-web-streaming-56jh
+    print("stream_llm(prompt,model):")
     print(prompt)
+    print(model)
     stream = chat(
-        model='llama3.2',
+        model=model,
         messages=[{'role': 'user', 'content': prompt}],
         stream=True,
     )
 
-    for chunk in stream:
+    for chunk in stream:        
         yield chunk['message']['content']
 
 def generate_code(request):
@@ -347,11 +352,12 @@ def generate_code(request):
         context = data['context']
         instruction = data['instruction']
         outputFormatInstruction = data['outputFormatInstruction']
+        model = data['model']
         prompt = context + " " + instruction + " " + outputFormatInstruction
         print(prompt)
         
         # You are python developer developing tools for Agentic application with 
-        response = StreamingHttpResponse(stream_llm(prompt))
+        response = StreamingHttpResponse(stream_llm(prompt,model))
         response['Content-Type'] = 'text/plain'
         return response
     
@@ -414,7 +420,7 @@ def knowledgerep(request,action,id):
         # bge-base embedding model
         Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-base-en-v1.5")
         # ollama
-        Settings.llm = Ollama(model='llama3.2', request_timeout=360.0)
+        Settings.llm = Ollama(model='llama3.1', request_timeout=360.0)
         print("=============== Vectorizing =============================")
         vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
         storage_context = StorageContext.from_defaults(vector_store=vector_store)
@@ -464,3 +470,64 @@ def run_rag(krepo_id,prompt,model):
     # """
     response = query_engine.query(prompt)    
     return str(response)
+
+
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import sqlite3
+from datetime import datetime
+
+@csrf_exempt
+def post_symbol_sentiment(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST method is allowed'}, status=405)
+    
+    try:
+        # Get POST data
+        print(request.POST)
+        data =  json.loads(request.body.decode("utf-8"))
+        symbol = data['symbol']
+        sentiment = data['sentiment']
+        explanation = data['explanation']
+        print(symbol, sentiment, explanation)
+        # Validate required fields
+        if not all([ symbol, sentiment, explanation]):
+            return JsonResponse({
+                'error-': 'Missing required fields. Need symbol, sentiment, and explanation'
+            }, status=400)
+        
+        # Connect to SQLite database
+        conn = sqlite3.connect('stocksentiment.db')
+        cursor = conn.cursor()
+        
+        # Create table if it doesn't exist
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS sentiments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,                
+                symbol TEXT NOT NULL,
+                sentiment TEXT NOT NULL,
+                explanation TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Insert data
+        cursor.execute('''
+            INSERT INTO sentiments (symbol, sentiment, explanation, created_at)
+            VALUES (?, ?, ?, ?)
+        ''', (symbol, sentiment, explanation, datetime.now().isoformat()))
+        
+        # Commit and close
+        conn.commit()
+        conn.close()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Sentiment data saved successfully'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'error': f'An error occurred: {str(e)}'
+        }, status=500)

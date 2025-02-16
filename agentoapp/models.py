@@ -49,6 +49,7 @@ SUBTASK_CHOICES = (
 class SubTask(models.Model):
     belongs_to = models.ForeignKey(Task,on_delete=models.DO_NOTHING)
     type = models.CharField(max_length=20,choices=(("TOOL",'Tool'),('RAG','RAG'),('LOOP','Loop')))
+    model = models.CharField(max_length=24)
     name = models.CharField(max_length=100)
     context = models.CharField(max_length=2048)
     instruction = models.CharField(max_length=2048)

@@ -123,8 +123,10 @@
                                         <a class="text-dark text-decoration-none step" data-bs-toggle="collapse"
                                             href="#step{{st.step}}" role="button">
                                             <i class="bi bi-chevron-right collapse-icon me-2"></i>
-                                            Step {{st.step}}
+                                            Step {{st.step}} <small>({{st.type}})</small>
                                         </a>
+                                        
+                                        
                                     </h3>
 
                                     <!-- <div class="dropdown">
@@ -179,7 +181,7 @@
         <div class="mt-4">
             <div class="row g-2 align-items-end mb-3">
                 <div class="col-md-6">
-                    <label for="modelSelect" class="form-label">Select Model</label>
+                    <label for="modelSelect" class="form-label">Select Model for Tool</label>
                     <select class="form-control" id="modelSelect" name="model">
                         <option></option>
                         {% for model in available_models %}
@@ -288,47 +290,50 @@
 
 
         // Start polling for current step
-        pollInterval = setInterval(function () {
-            $.ajax({
-                url: "/task/status/{{id}}",  // You'll need to create this endpoint
-                method: 'GET',
-                success: function (response) {
-                    // Remove previous highlighting
-                    $(".step-container").removeClass("bg-light border-success");
+        let pollInterval;
+        
+        // Only start polling if we're on the edit page
+        if ($('#subTasks').length > 0) {
+            pollInterval = setInterval(function () {
+                $.ajax({
+                    url: "/task/status/{{id}}",
+                    method: 'GET',
+                    success: function (response) {
+                        // Remove previous highlighting from all step containers
+                        $(".step-container").removeClass("bg-light").removeClass("border-success");
+                        
+                        if (response.current_step !== null) {
+                            // Find the step item that matches the current step and highlight its container
+                            $(`.step-item:nth-child(${response.current_step + 1}) .step-container`)
+                                .addClass("bg-light border-success");
+                        }
 
-                    if (response.current_step !== null) {
-                        // Highlight current step
-                        $(`#step${response.current_step}`)
-                            .closest('.step-container')
-                            .addClass("bg-light border-success");
-
-
-
-                    }
-
-                    // If task is complete, stop polling
-                    if (response.status === 'completed') {
+                        if (response.status === 'completed') {
+                            clearInterval(pollInterval);
+                        }
+                    },
+                    error: function () {
                         clearInterval(pollInterval);
                     }
-                },
-                error: function () {
-                    // Stop polling on error
-                    clearInterval(pollInterval);
-                }
-            });
-        }, 5000000);  // Poll every 5 seconds
+                });
+            }, 5000000000);
+        }
 
-        // Add CSS for highlighting
-        const style = document.createElement('style');
-        style.textContent = `
-    .step-container.bg-light.border-success {
-        border: 4px solid #198754 !important;
-        background-color: #f8f9fa !important;
-        transition: all 0.3s ease;
-    }
-`;
-        document.head.appendChild(style);
-        document.head.appendChild()
+        // Add CSS for highlighting - move this to the style section in head
+        const highlightStyles = `
+            .step-container.bg-light.border-success {
+                border: 2px solid #198754 !important;
+                background-color: #f8f9fa !important;
+                transition: all 0.3s ease;
+                box-shadow: 0 0 10px rgba(25, 135, 84, 0.2);
+            }
+        `;
+
+        // Properly append the styles to head
+        const styleElement = document.createElement('style');
+        styleElement.textContent = highlightStyles;
+        document.head.appendChild(styleElement);
+     
 
      
     </script>

@@ -144,10 +144,6 @@
             {% csrf_token %}
             <div class="form-group">
                 <label for="modelSelect" class="form-label">Select knowledge Repository</label>
-                {% for kp in knowledgereps %}
-              
-             {% endfor %}
-
                 <select class="form-control" id="knowledgerep" name="knowledgerep">
                     <option></option>
                     
@@ -157,6 +153,22 @@
                     
                 </select>
             </div>
+
+                    <div class="form-group">
+                        <label for="modelSelect" class="form-label">Select Model</label>
+                        <select class="form-control" id="modelSelect" name="model">
+                            <option></option>
+                            {% for model in available_models %}
+                            <option value="{{ model }}" {% if model == subtask.model %} selected="selected" {%endif%}>
+                                {{ model }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                  
+    
+
+
 
             <div class="form-group">
                 <label for="subTaskName" class="form-label">Sub Task Name</label>
