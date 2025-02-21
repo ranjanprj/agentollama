@@ -117,52 +117,16 @@
 from ollama import chat
 from pydantic import BaseModel
 
+
+from typing import Annotated, Literal
+
+
+allowed_values = ["Positive", "Negative","Neutral"]
+
 class Output(BaseModel):
-  symbol: str
-  sentiment: str
+  symbol: str  
+  sentiment: Literal[tuple(allowed_values)]
   explanation: str
 print(Output.model_json_schema())
 
 
-
-post_stock_sentiment_tool = {
-  'type': 'function',
-  'function': {
-    'name': 'post_stock_sentiment',
-    'description': 'Post stock sentiment to Agentic application',
-    'parameters': {
-      'type': 'object',
-      'required': ['symbol', 'sentiment', 'explanation'],
-      'properties': {
-        'symbol': {'type': 'string', 'description': 'Stock symbol'},
-        'sentiment': {'type': 'string', 'description': 'Sentiment type (e.g. positive, negative)'},
-        'explanation': {'type': 'string', 'description': 'Explanation of the sentiment'},
-      },
-    },
-  },
-}
-
-def post_stock_sentiment(symbol: str, sentiment: str, explanation: str):
-  """
-  Post stock sentiment to Agentic application
-  """
-  import requests
-    
-  API_BASE_URL = "http://127.0.0.1:8000/post_symbol_sentiment"
-
-
-  api_url = API_BASE_URL
-  data = {
-    'symbol': symbol,
-    'sentiment': sentiment,
-    'explanation': explanation
-  }
-
-  response = requests.post(api_url, json=data)
-  print(response)
-  if response.status_code == 200:
-    return "Stock sentiment posted successfully"
-  else:
-    return f"Error posting stock sentiment: {response.text}"
-  
-print(post_stock_sentiment('test','test','test'))
