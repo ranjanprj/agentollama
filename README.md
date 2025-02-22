@@ -1,4 +1,4 @@
-# Agentollama
+# Agentollama ![Agentollama UI](img/agentollama.webp )
 
 ## 🚀 Overview
 The **Agentollama Framework** is a UI-driven framework that enables the creation, execution, and monitoring of intelligent Agents without writing business logic. It leverages AI to dynamically invoke API calls, integrate with legacy applications, and automate complex workflows—all within an intuitive user interface.
