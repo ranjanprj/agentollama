@@ -1,0 +1,51 @@
+<!-- templates/index.html -->
+{% extends 'base.html' %}
+
+{% block title %}Claims Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Claims Dashboard</h1>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('new_claim') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> New Claim
+        </a>
+    </div>
+</div>
+
+{% if claims %}
+    <div class="row">
+        {% for claim in claims %}
+        <div class="col-md-4">
+            <div class="card claim-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ claim.title }}</h5>
+                    <span class="badge {% if claim.status == 'Pending' %}bg-warning{% elif claim.status == 'Approved' %}bg-success{% elif claim.status == 'Processing' %}bg-primary{% else %}bg-secondary{% endif %}">
+                        {{ claim.status }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ claim.description }}</p>
+                    <p class="card-text"><small class="text-muted">Repository: {{ claim.repository_name }}</small></p>
+                    <p class="card-text"><small class="text-muted">Created: {{ claim.created_at }}</small></p>
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('view_claim', claim_id=claim.id) }}" class="btn btn-sm btn-outline-primary">View Details</a>
+                        <form action="{{ url_for('process_claim', claim_id=claim.id) }}" method="post">
+                            <button type="submit" class="btn btn-sm btn-outline-success" {% if claim.status != 'Pending' %}disabled{% endif %}>
+                                Process Claim
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        No claims found. <a href="{{ url_for('new_claim') }}">Create your first claim</a>.
+    </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,257 @@
+<!-- templates/new_claim.html -->
+{% extends 'base.html' %}
+
+{% block title %}New Claim{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Create New Claim</h1>
+
+<div class="card">
+    <div class="card-body">
+        <form action="{{ url_for('new_claim') }}" method="post" enctype="multipart/form-data" id="claimForm">
+            <div class="mb-3">
+                <label for="title" class="form-label">Claim Title</label>
+                <input type="text" class="form-control" id="title" name="title" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+            </div>
+            
+            <div class="mb-3">
+                <label for="repository_name" class="form-label">Repository Name</label>
+                <input type="text" class="form-control" id="repository_name" name="repository_name" required>
+                <div class="form-text">Name of the knowledge repository to store documents</div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="documents" class="form-label">Supporting Documents</label>
+                <div class="input-group mb-3">
+                    <input type="file" class="form-control" id="documents" name="documents" multiple required>
+                    <button class="btn btn-outline-secondary" type="button" id="clearFilesBtn">Clear</button>
+                </div>
+                <div class="form-text">
+                    Allowed file types: PDF, DOC, DOCX, TXT, JPG, JPEG, PNG (Max 32MB total)
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <div id="fileProgress" class="progress d-none mb-2">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                </div>
+                <div id="selected-files" class="mt-2"></div>
+                <div id="fileValidation" class="mt-2"></div>
+            </div>
+            <div class="mb-3">
+                <label for="agent_name" class="form-label">Agent Name</label>
+                <input type="text" class="form-control" id="agent_name" name="agent_name" required>
+                <div class="form-text">Name of the AI Agent to process documents</div>
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary" id="submitBtn">Submit Claim</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // File handling and validation
+    const fileInput = document.getElementById('documents');
+    const fileContainer = document.getElementById('selected-files');
+    const validationContainer = document.getElementById('fileValidation');
+    const clearBtn = document.getElementById('clearFilesBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const progressBar = document.getElementById('fileProgress');
+    const progressBarInner = progressBar.querySelector('.progress-bar');
+    
+    const MAX_FILE_SIZE = 32 * 1024 * 1024; // 32MB
+    const ALLOWED_TYPES = ['.pdf', '.doc', '.docx', '.txt', '.jpg', '.jpeg', '.png'];
+    
+    // Show selected files with validation
+    fileInput.addEventListener('change', function(e) {
+        updateFileDisplay();
+    });
+    
+    // Clear selected files
+    clearBtn.addEventListener('click', function() {
+        fileInput.value = '';
+        fileContainer.innerHTML = '';
+        validationContainer.innerHTML = '';
+        validateFiles();
+    });
+    
+    // Form submission handling
+    document.getElementById('claimForm').addEventListener('submit', function(e) {
+        if (!validateFiles()) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Show progress bar during upload
+        progressBar.classList.remove('d-none');
+        progressBarInner.style.width = '0%';
+        submitBtn.disabled = true;
+        
+        // Simulate progress (in a real app, you would use XHR/Fetch with progress events)
+        let progress = 0;
+        const interval = setInterval(function() {
+            progress += 5;
+            progressBarInner.style.width = progress + '%';
+            progressBarInner.setAttribute('aria-valuenow', progress);
+            
+            if (progress >= 100) {
+                clearInterval(interval);
+            }
+        }, 300);
+        
+        return true;
+    });
+    
+    function updateFileDisplay() {
+        const fileList = fileInput.files;
+        fileContainer.innerHTML = '';
+        
+        if (fileList.length > 0) {
+            const heading = document.createElement('h6');
+            heading.textContent = 'Selected Files:';
+            fileContainer.appendChild(heading);
+            
+            const list = document.createElement('ul');
+            list.className = 'list-group';
+            
+            let totalSize = 0;
+            
+            for (let i = 0; i < fileList.length; i++) {
+                const file = fileList[i];
+                totalSize += file.size;
+                
+                const item = document.createElement('li');
+                item.className = 'list-group-item d-flex justify-content-between align-items-center';
+                
+                // Get file extension
+                const extension = '.' + file.name.split('.').pop().toLowerCase();
+                const isValidType = ALLOWED_TYPES.includes(extension);
+                const isValidSize = file.size <= MAX_FILE_SIZE;
+                
+                // Add icons based on file type
+                let fileIcon = getFileIcon(extension);
+                
+                item.innerHTML = `
+                    <div>
+                        <span class="me-2">${fileIcon}</span>
+                        <span>${file.name}</span>
+                    </div>
+                    <div>
+                        <span class="badge ${isValidSize ? 'bg-primary' : 'bg-danger'} rounded-pill">
+                            ${formatFileSize(file.size)}
+                        </span>
+                        ${!isValidType ? '<span class="badge bg-danger ms-1">Invalid type</span>' : ''}
+                    </div>
+                `;
+                list.appendChild(item);
+            }
+            
+            fileContainer.appendChild(list);
+            
+            // Add total size indicator
+            const totalSizeDiv = document.createElement('div');
+            totalSizeDiv.className = 'mt-2 text-muted';
+            totalSizeDiv.innerHTML = `Total size: <strong>${formatFileSize(totalSize)}</strong>`;
+            fileContainer.appendChild(totalSizeDiv);
+        }
+        
+        validateFiles();
+    }
+    
+    function validateFiles() {
+        const fileList = fileInput.files;
+        validationContainer.innerHTML = '';
+        
+        if (!fileList || fileList.length === 0) {
+            submitBtn.disabled = true;
+            return false;
+        }
+        
+        const errors = [];
+        let totalSize = 0;
+        
+        for (let i = 0; i < fileList.length; i++) {
+            const file = fileList[i];
+            totalSize += file.size;
+            
+            // Check file type
+            const extension = '.' + file.name.split('.').pop().toLowerCase();
+            if (!ALLOWED_TYPES.includes(extension)) {
+                errors.push(`"${file.name}" has an invalid file type. Allowed: ${ALLOWED_TYPES.join(', ')}`);
+            }
+            
+            // Check individual file size
+            if (file.size > MAX_FILE_SIZE) {
+                errors.push(`"${file.name}" exceeds the maximum file size (${formatFileSize(MAX_FILE_SIZE)})`);
+            }
+        }
+        
+        // Check total size
+        if (totalSize > MAX_FILE_SIZE) {
+            errors.push(`Total size (${formatFileSize(totalSize)}) exceeds the maximum allowed (${formatFileSize(MAX_FILE_SIZE)})`);
+        }
+        
+        if (errors.length > 0) {
+            const errorList = document.createElement('div');
+            errorList.className = 'alert alert-danger';
+            errorList.innerHTML = '<h6>Please fix the following issues:</h6><ul class="mb-0">';
+            
+            errors.forEach(error => {
+                errorList.innerHTML += `<li>${error}</li>`;
+            });
+            
+            errorList.innerHTML += '</ul>';
+            validationContainer.appendChild(errorList);
+            submitBtn.disabled = true;
+            return false;
+        }
+        
+        submitBtn.disabled = false;
+        return true;
+    }
+    
+    function formatFileSize(bytes) {
+        if (bytes < 1024) {
+            return bytes + ' B';
+        } else if (bytes < 1024 * 1024) {
+            return (bytes / 1024).toFixed(1) + ' KB';
+        } else {
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+    }
+    
+    function getFileIcon(extension) {
+        let icon = '<i class="bi bi-file-earmark"></i>';
+        
+        switch(extension) {
+            case '.pdf':
+                icon = '<i class="bi bi-file-earmark-pdf"></i>';
+                break;
+            case '.doc':
+            case '.docx':
+                icon = '<i class="bi bi-file-earmark-word"></i>';
+                break;
+            case '.txt':
+                icon = '<i class="bi bi-file-earmark-text"></i>';
+                break;
+            case '.jpg':
+            case '.jpeg':
+            case '.png':
+                icon = '<i class="bi bi-file-earmark-image"></i>';
+                break;
+        }
+        
+        return icon;
+    }
+</script>
+{% endblock %}

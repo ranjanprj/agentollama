@@ -85,118 +85,8 @@ def task(request,action,id):
             
     if action == 'run':
         print("RUN")
-        task_run = TaskRun.objects.create(task=task)
         model = request.GET.get('model', 'llama3.1:latest')
-        answer = ''
-        loop_st_found = False
-        loop_previous_result = ''
-        loop_st = []
-        subtasks = SubTask.objects.filter(belongs_to=id).order_by('step')
-        for sb in subtasks:            
-            task_run.current_step = st.step
-            task_run.current_step_status = 'RUNNING'
-            task_run.save()
-            tools = []
-            
-            task_log = TaskLog.objects.create(task_run=task_run)
-            log = '<p>===========================================================</p>'
-            log += f'<p> Running Task {task}</p>'
-            
-            if loop_st_found:                    
-                loop_st.append(sb)
-            if sb.type == 'LOOP':
-                loop_previous_result = answer
-                loop_st_found = True              
-            if sb.type == 'RAG' and not loop_st_found:
-                p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)} Output Format: {sb.outputFormatInstruction}"
-                if sb.knowledgerep.name != 'Empty':
-                    answer = run_rag(sb.knowledgerep.id,p,sb.model)                    
-                    print(answer)
-                else:
-                    output_format = False
-                    answer,log = prompt_rag(p,output_format,sb.model)                   
-                    print(answer)
-            
-            if sb.type == 'TOOL' and not loop_st_found:
-                p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)}   "
-                output_format = False
-                if sb.outputFormatInstruction != '':
-                    output_format = json.loads(sb.outputFormatInstruction)  
-
-                print(output_format)
-                assigned_tools = SubTaskTool.objects.filter(subtask=sb.id)
-                for at in assigned_tools:
-                    log += f'<p> Assigned tools {at}</p>'
-                    # t = Tool.objects.get(id=at.tool)
-                    t = model_to_dict(at.tool)
-                    log += f'<p> Tool Defininition: {at.tool} </p>'
-                    tools.append(t)
-                print(tools)
-                log += f'<p> Prompt {p}</p>'
-                log += f'<p> Model  {model}</p>'
-                answer,log = prompt(p,tools,output_format,model)
-                log += f'<p> Answer {answer}</p>'
-                task_log.log = log
-                task_log.save()
-        # Execute LOOP SUBTASK
-        print("====================== LOOP SUBTASKS ====================")
-        print(loop_st)
-        print(loop_previous_result)
-        # loop_previous_result = json.loads(loop_previous_result)
-        if loop_st and loop_previous_result and len(loop_previous_result) > 0:
-            loop_previous_result = json_repair.loads(loop_previous_result)
-            print(loop_previous_result)
-            for result in loop_previous_result['previous_result']:
-                # Loop over and run all tasks 
-                answer = result
-                print("====================== LOOP INPUT ANSWER  ====================",answer)
-                for sb in loop_st:
-                    print("====================== LOOP SB ANSWER  ====================",answer)
-                    if sb.type == 'RAG':
-                        p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)} Output Format: {sb.outputFormatInstruction}"
-                        if sb.knowledgerep.name != 'Empty':
-                            answer = run_rag(sb.knowledgerep.id,p,sb.model)                    
-                            print(answer)
-                        else:
-                            output_format = False
-                            answer,log = prompt_rag(p,output_format,sb.model)
-                            print(answer)
-                    
-                    if sb.type == 'TOOL':
-                        p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)}   "
-                        
-                        output_format = False
-                        if sb.outputFormatInstruction != '':
-                            output_format = json.loads(sb.outputFormatInstruction)  
-
-                        print(output_format)
-                        assigned_tools = SubTaskTool.objects.filter(subtask=sb.id)
-                        for at in assigned_tools:
-                            log += f'<p> Assigned tools {at}</p>'
-                            # t = Tool.objects.get(id=at.tool)
-                            t = model_to_dict(at.tool)
-                            log += f'<p> Tool Defininition: {at.tool} </p>'
-                            tools.append(t)
-                        print(tools)
-                        log += f'<p> Prompt {p}</p>'
-                        log += f'<p> Model  {model}</p>'
-
-
-                        answer,log = prompt(p,tools,output_format,model)
-
-
-                        log += f'<p> Answer {answer}</p>'
-                        task_log.log = log
-                        task_log.save()
-
-
-        print("====================== FINAL ANSWER ====================",answer)
-        task_run = TaskRun.objects.get(id=task_run.id)
-        print("closing task run",task_run)
-        task_run.current_step = -1
-        task_run.current_step_status = 'COMPLETED'
-        task_run.save()
-        print(answer)
+        answer = execute_task_run(id=id,model=model)
         return HttpResponse(answer)
     response: ListResponse = list()
     available_models = [model.model for model in response.models]
@@ -366,31 +256,43 @@ def knowledgerep(request,action,id):
     krep = KnowledgeRep.objects.all()
     krepf = KnowledgeRepFiles.objects.all()
     krepo = None
+    tasks = Task.objects.all()
     if action == 'create' and request.method == 'POST':        
         name = request.POST.get('name','')              
         description = request.POST.get('description','')
-
-        KnowledgeRep.objects.create(name=name,description=description)
+        associated_task = request.POST.get('associated_task',None)
+        if associated_task:
+            associated_task = Task.objects.get(id=associated_task)
+            KnowledgeRep.objects.create(name=name,description=description,associated_task=associated_task)
+        else:
+            KnowledgeRep.objects.create(name=name,description=description)
         return redirect('/knowledgerep/create/0')
         
     if action == 'upload' and request.method == 'POST':
         print(request.POST)
         knowledgerep_id = int(request.POST.get('knowledgerep',''))
+    
         print(knowledgerep_id)
         krep = KnowledgeRep.objects.get(id=knowledgerep_id)
+
         instance = KnowledgeRepFiles(Knowledge_rep=krep,file=request.FILES["file"])
         instance.save()
         return redirect('/knowledgerep/create/0')
 
     if action == 'edit' and request.method == 'GET' and id:
-        krepo = KnowledgeRep.objects.get(id=id)  
+        krepo = KnowledgeRep.objects.get(id=id)        
+
+        krepf = KnowledgeRepFiles.objects.filter(Knowledge_rep=krepo)
     
     if action == 'edit' and request.method == 'POST' and id:
         name = request.POST.get('name','')              
         description = request.POST.get('description','')
+        associated_task = request.POST.get('associated_task','')
         krepo = KnowledgeRep.objects.get(id=id) 
         krepo.name = name
         krepo.description = description
+        associated_task = Task.objects.get(id=associated_task)
+        krepo.associated_task = associated_task
         krepo.save()
         return redirect('/knowledgerep/create/0')
     if action == 'delete' and request.method == 'GET' and id:
@@ -431,8 +333,153 @@ def knowledgerep(request,action,id):
         return redirect('/knowledgerep/create/0')
 
 
-    return render(request,'agentoapp/knowledgerep.html',context={'krep':krep,'krepf':krepf,'krepo':krepo,'action':action,'id':id})
+    return render(request,'agentoapp/knowledgerep.html',context={'krep':krep,'krepf':krepf,'krepo':krepo,'action':action,'id':id, 'tasks':tasks})
 
+
+def execute_task_run(id=None,agent_name=None,model='llama3.1',repository_name=None):    
+    print("====================================================")
+    print("---------execute_task_run---------------------------")
+    print(id,agent_name,model,repository_name)
+    print("====================================================")
+    task = None
+    steps = None
+    st_list = []
+    subasks = None
+    if id:
+        task = Task.objects.get(id=id)
+    elif agent_name:
+        task = Task.objects.filter(name=agent_name)[0]
+    print("Task -> " , task)
+    id = task.id
+    # gt steps asc
+    # subtasks = SubTask.objects.filter(belongs_to=id).order_by('step').values()
+    for st in SubTask.objects.filter(belongs_to=id).order_by('step'):
+        print(st)  
+        current_step = st.step
+        found = False
+        for stl in st_list:
+            if stl['step'] == current_step:
+                found = True
+                stl['subtasks'].append(st)
+        if not found:
+            st_list.append({'step':st.step, 'subtasks':[st]})
+            found = False
+    subtasks = SubTask.objects.filter(belongs_to=id).order_by('step')
+    print("Subtasks" , subtasks)
+    task_run = TaskRun.objects.create(task=task)
+  
+    answer = ''
+    loop_st_found = False
+    loop_previous_result = ''
+    loop_st = []
+    subtasks = SubTask.objects.filter(belongs_to=id).order_by('step')
+    for sb in subtasks:            
+        task_run.current_step = st.step
+        task_run.current_step_status = 'RUNNING'
+        task_run.save()
+        tools = []
+        
+        task_log = TaskLog.objects.create(task_run=task_run)
+        log = '<p>===========================================================</p>'
+        log += f'<p> Running Task {task}</p>'
+        
+        if loop_st_found:                    
+            loop_st.append(sb)
+        if sb.type == 'LOOP':
+            loop_previous_result = answer
+            loop_st_found = True              
+        if sb.type == 'RAG' and not loop_st_found:
+
+            p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)} Output Format: {sb.outputFormatInstruction}"
+
+            if repository_name:
+                krep = KnowledgeRep.objects.filter(name=repository_name)[0]
+                krep = KnowledgeRep.objects.get(id=krep.id)
+                sb.knowledgerep = krep
+
+            if sb.knowledgerep.name != 'Empty':
+                answer = run_rag(sb.knowledgerep.id,p,sb.model)                    
+                print(answer)
+            else:
+                output_format = False
+                answer,log = prompt_rag(p,output_format,sb.model)                   
+                print(answer)
+        
+        if sb.type == 'TOOL' and not loop_st_found:
+            p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)}   "
+            output_format = False
+            if sb.outputFormatInstruction != '':
+                output_format = json.loads(sb.outputFormatInstruction)  
+            print(output_format)
+            assigned_tools = SubTaskTool.objects.filter(subtask=sb.id)
+            for at in assigned_tools:
+                log += f'<p> Assigned tools {at}</p>'
+                # t = Tool.objects.get(id=at.tool)
+                t = model_to_dict(at.tool)
+                log += f'<p> Tool Defininition: {at.tool} </p>'
+                tools.append(t)
+            print(tools)
+            log += f'<p> Prompt {p}</p>'
+            log += f'<p> Model  {model}</p>'
+            answer,log = prompt(p,tools,output_format,model)
+            log += f'<p> Answer {answer}</p>'
+            task_log.log = log
+            task_log.save()
+    # Execute LOOP SUBTASK
+    print("====================== LOOP SUBTASKS ====================")
+    print(loop_st)
+    print(loop_previous_result)
+    # loop_previous_result = json.loads(loop_previous_result)
+    if loop_st and loop_previous_result and len(loop_previous_result) > 0:
+        loop_previous_result = json_repair.loads(loop_previous_result)
+        print(loop_previous_result)
+        for result in loop_previous_result['previous_result']:
+            # Loop over and run all tasks 
+            answer = result
+            print("====================== LOOP INPUT ANSWER  ====================",answer)
+            for sb in loop_st:
+                print("====================== LOOP SB ANSWER  ====================",answer)
+                if sb.type == 'RAG':
+                    p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)} Output Format: {sb.outputFormatInstruction}"
+                    if sb.knowledgerep.name != 'Empty':
+                        answer = run_rag(sb.knowledgerep.id,p,sb.model)                    
+                        print(answer)
+                    else:
+                        output_format = False
+                        answer,log = prompt_rag(p,output_format,sb.model)
+                        print(answer)
+                
+                if sb.type == 'TOOL':
+                    p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)}   "
+                    
+                    output_format = False
+                    if sb.outputFormatInstruction != '':
+                        output_format = json.loads(sb.outputFormatInstruction)  
+                    print(output_format)
+                    assigned_tools = SubTaskTool.objects.filter(subtask=sb.id)
+                    for at in assigned_tools:
+                        log += f'<p> Assigned tools {at}</p>'
+                        # t = Tool.objects.get(id=at.tool)
+                        t = model_to_dict(at.tool)
+                        log += f'<p> Tool Defininition: {at.tool} </p>'
+                        tools.append(t)
+                    print(tools)
+                    log += f'<p> Prompt {p}</p>'
+                    log += f'<p> Model  {model}</p>'
+                    answer,log = prompt(p,tools,output_format,model)
+                    log += f'<p> Answer {answer}</p>'
+                    task_log.log = log
+                    task_log.save()
+    print("====================== FINAL ANSWER ====================",answer)
+    task_run = TaskRun.objects.get(id=task_run.id)
+    print("closing task run",task_run)
+    task_run.current_step = -1
+    task_run.current_step_status = 'COMPLETED'
+    task_run.save()
+    print(answer)
+    return answer
+
+    
 
 def run_rag(krepo_id,prompt,model):
     krepo = KnowledgeRep.objects.get(id=krepo_id)  
@@ -470,8 +517,6 @@ def run_rag(krepo_id,prompt,model):
     # """
     response = query_engine.query(prompt)    
     return str(response)
-
-
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -528,6 +573,97 @@ def post_symbol_sentiment(request):
         })
         
     except Exception as e:
+        return JsonResponse({
+            'error': f'An error occurred: {str(e)}'
+        }, status=500)
+    
+
+
+
+from django.views.decorators.csrf import csrf_exempt
+import os
+from pathlib import Path
+from django.http import JsonResponse
+import json
+from django.views.decorators.csrf import csrf_exempt
+import os
+from pathlib import Path
+from django.http import JsonResponse
+import json
+from django.shortcuts import redirect
+from django.urls import reverse
+
+@csrf_exempt
+def api_upload_document(request):
+    """
+    API endpoint to receive document uploads from a Flask application
+    and add them to a knowledge repository.
+    """
+    
+    if request.method == 'GET':
+        return HttpResponse("api_upload_document")
+
+    print(request.method)
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST method is allowed'}, status=405)
+    
+    try:
+        # Check if repository ID is provided
+        repository_name = request.POST.get('repository_name')
+      
+        description = request.POST.get('description')
+        agent_name = request.POST.get('agent_name')
+        if not description:
+            description = repository_name
+        if not repository_name:
+            return JsonResponse({'error': 'Repository nameis required'}, status=400)
+        
+        # associated_task = request.POST.get('associated_task')
+        # associated_task = Task.objects.filter(name=associated_task)
+        print(repository_name,description,agent_name)
+        
+        # Get the knowledge repository
+        krep = KnowledgeRep.objects.filter(name=repository_name)
+
+        if len(krep) == 0:
+            agent_name = Task.objects.filter(name=agent_name)[0]
+            krep = KnowledgeRep.objects.create(name=repository_name,description=description,associated_task=agent_name)
+        else:
+            krep = krep[0]
+            KnowledgeRepFiles.objects.filter(Knowledge_rep=krep).delete()
+        
+        # Check if file is in the request
+        if 'file' not in request.FILES:
+            return JsonResponse({'error': 'No file uploaded'}, status=400)
+        
+        print("Deleting existing files")
+       
+        
+        
+
+        for file in request.FILES:
+            # Save the uploaded file
+            uploaded_file = request.FILES['file']
+            print(uploaded_file)
+            
+            # Create instance and save to database
+            instance = KnowledgeRepFiles(Knowledge_rep=krep, file=uploaded_file)
+            instance.save()
+        print("Executing LLM")
+        llm_answer = execute_task_run(id=None,agent_name=agent_name,model='llama3.1',repository_name=repository_name)
+        # Response with success message
+        print("Sending response back with following answer")
+        print(llm_answer)
+        return JsonResponse({
+            'success': True,
+            'message': f'Documents {request.FILES} uploaded successfully to repository {krep.name}',
+            'repository_name': repository_name,
+            'llm_answer' : llm_answer
+          
+        })
+        
+    except Exception as e:
+        print(e)
         return JsonResponse({
             'error': f'An error occurred: {str(e)}'
         }, status=500)

@@ -1,0 +1,162 @@
+<!-- templates/view_claim.html -->
+{% extends 'base.html' %}
+
+{% block title %}View Claim - {{ claim.title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Claim Details</h1>
+    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Back to Dashboard</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="mb-0">{{ claim.title }}</h3>
+        <span class="badge {% if claim.status == 'Pending' %}bg-warning{% elif claim.status == 'Approved' %}bg-success{% elif claim.status == 'Processing' %}bg-primary{% else %}bg-secondary{% endif %} fs-6">
+            {{ claim.status }}
+        </span>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <p><strong>Description:</strong><br>{{ claim.description }}</p>
+                <p><strong>Repository:</strong> {{ claim.repository_name }}</p>
+                <p><strong>Created:</strong> {{ claim.created_at }}</p>
+            </div>
+            <div class="col-md-6">
+                <form action="{{ url_for('update_claim_status', claim_id=claim.id) }}" method="post" class="mb-3">
+                    <div class="input-group">
+                        <select class="form-select" name="status">
+                            <option value="Pending" {% if claim.status == 'Pending' %}selected{% endif %}>Pending</option>
+                            <option value="Processing" {% if claim.status == 'Processing' %}selected{% endif %}>Processing</option>
+                            <option value="Under Review" {% if claim.status == 'Under Review' %}selected{% endif %}>Under Review</option>
+                            <option value="Approved" {% if claim.status == 'Approved' %}selected{% endif %}>Approved</option>
+                            <option value="Rejected" {% if claim.status == 'Rejected' %}selected{% endif %}>Rejected</option>
+                        </select>
+                        <button class="btn btn-primary" type="submit">Update Status</button>
+                    </div>
+                </form>
+                
+                <form action="{{ url_for('process_claim', claim_id=claim.id) }}" method="post" id="processForm">
+                    <button type="submit" class="btn btn-success w-100" id="processBtn" {% if claim.status != 'Pending' %}disabled{% endif %}>
+                        Process Claim Documents
+                    </button>
+                </form>
+                
+                <div id="processProgress" class="progress d-none mt-3">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+        
+        <h4>Supporting Documents</h4>
+        <div class="row">
+            {% if claim.files %}
+                {% for file in claim.files %}
+                    <div class="col-md-6 mb-3">
+                        <div class="file-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-1">{{ file.filename }}</h5>
+                                    <p class="mb-0 text-muted">
+                                        Size: {{ (file.filesize / 1024)|round(1) }} KB<br>
+                                        Uploaded: {{ file.uploaded_at }}
+                                        {% if file.api_document_id %}
+                                        <br><span class="badge bg-info">API Document ID: {{ file.api_document_id }}</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div>
+                                    <!-- In a real app, you would add a route to download the file -->
+                                    <a href="{{ url_for('download_file', file_id=file.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-download"></i> Download
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="col">
+                    <div class="alert alert-warning">No documents attached to this claim.</div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if claim.files %}
+<div class="card">
+    <div class="card-header">
+        <h4 class="mb-0">API Document Processing</h4>
+    </div>
+    <div class="card-body">
+        <div class="mb-3">
+            <p>Document processing status:</p>
+            <ul class="list-group">
+                {% set processed_count = namespace(value=0) %}
+                {% for file in claim.files %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ file.filename }}
+                        {% if file.api_document_id %}
+                            {% set processed_count.value = processed_count.value + 1 %}
+                            <span class="badge bg-success">Processed</span>
+                        {% else %}
+                            <span class="badge bg-warning">Pending</span>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <div class="progress mb-3">
+            {% set progress = (processed_count.value / claim.files|length * 100)|int %}
+            <div class="progress-bar bg-success" role="progressbar" style="width: {{ progress }}%" 
+                 aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100">
+                {{ progress }}%
+            </div>
+        </div>
+        
+        <div class="text-muted">
+            {% if processed_count.value == 0 %}
+                <p>No documents have been processed yet. Click "Process Claim Documents" to begin processing.</p>
+            {% elif processed_count.value < claim.files|length %}
+                <p>{{ processed_count.value }} out of {{ claim.files|length }} documents have been processed.</p>
+            {% else %}
+                <p>All documents have been processed successfully.</p>
+            {% endif %}
+        </div>
+        <div class="alert alert-info">
+            {{ claim.llm_answer }}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Add processing animation
+    document.getElementById('processForm')?.addEventListener('submit', function(e) {
+        const processBtn = document.getElementById('processBtn');
+        const progressBar = document.getElementById('processProgress');
+        const progressBarInner = progressBar.querySelector('.progress-bar');
+        
+        processBtn.disabled = true;
+        processBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+        progressBar.classList.remove('d-none');
+        
+        // Simulate progress (in a real app, you would use XHR/Fetch with progress events)
+        let progress = 0;
+        const interval = setInterval(function() {
+            progress += 5;
+            progressBarInner.style.width = progress + '%';
+            progressBarInner.setAttribute('aria-valuenow', progress);
+            
+            if (progress >= 100) {
+                clearInterval(interval);
+            }
+        }, 300);
+    });
+</script>
+{% endblock %}

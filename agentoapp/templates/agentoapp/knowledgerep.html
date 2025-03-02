@@ -35,6 +35,7 @@
                                         <th>Name</th>
                                         <th>Description</th>
                                         <th>Actions</th>
+                                        <th>Associated Task</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -55,6 +56,7 @@
                                                 </a>
                                             </div>
                                         </td>
+                                        <td>{{k.associated_task}}</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -72,6 +74,14 @@
                                 <label for="description" class="form-label">Description</label>
                                 <textarea class="form-control" name="description" id="description" rows="1">{{krepo.description}}</textarea>
                             </div>
+                            <label for="associated_task" class="form-label">Select Knowledge Repository</label>
+                            
+                            <select class="form-select" id="associated_task" name="associated_task">
+                                <option value="">Choose Task...</option>
+                                {% for t in tasks %}
+                                <option value="{{ t.id }}"  {% if krepo.associated_task == t %}selected{%endif%}>{{ t }}</option>
+                                {% endfor %}
+                            </select>
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-lg"></i> Create
                             </button>
@@ -89,9 +99,9 @@
                         <h3 class="h5 mb-0">Upload Files to Knowledge Repository</h3>
                     </div>
                     <div class="card-body">
-                        <form method="post" enctype="multipart/form-data" action="{% url 'agentoapp:knowledgerep' action='upload' id=0 %}" class="mb-4">
+                        <form method="post" enctype="multipart/form-data" action="{% url 'agentoapp:knowledgerep' action='upload' id=id %}" class="mb-4">
                             {% csrf_token %}
-                            <div class="mb-3">
+                            <!-- <div class="mb-3">
                                 <label for="knowledgerep" class="form-label">Select Knowledge Repository</label>
                                 <select class="form-select" id="knowledgerep" name="knowledgerep" required>
                                     <option value="">Choose repository...</option>
@@ -99,7 +109,8 @@
                                     <option value="{{ k.id }}">{{ k }}</option>
                                     {% endfor %}
                                 </select>
-                            </div>
+                            </div> -->
+                          <input type="hidden" id="knowledgerep" name="knowledgerep" value="{{id}}"/>
                             <div class="mb-3">
                                 <label for="file" class="form-label">Choose File</label>
                                 <input type="file" class="form-control" id="file" name="file" required>

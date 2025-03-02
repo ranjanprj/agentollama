@@ -2,12 +2,24 @@ from django.db import models
 from django.dispatch import receiver
 import os
 
-class KnowledgeRep(models.Model):
-    name = models.CharField(max_length=24)
-    description = models.CharField(max_length=128)
+class Task(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.CharField(max_length=100)
+
+  
 
     def __str__(self):
-        return str(self.id)
+        return self.name
+
+
+
+class KnowledgeRep(models.Model):
+    name = models.CharField(max_length=24,unique=True)
+    description = models.CharField(max_length=128)
+    associated_task = models.ForeignKey(Task,on_delete=models.SET_NULL,null=True,blank=True)
+    
+    def __str__(self):
+        return str(self.name)
 
 
 def user_directory_path(instance,filename):
@@ -30,15 +42,6 @@ def auto_delete_file_on_delete(sender, instance, **kwargs):
     if instance.file:
         if os.path.isfile(instance.file.path):
             os.remove(instance.file.path)
-
-class Task(models.Model):
-    name = models.CharField(max_length=100)
-    description = models.CharField(max_length=100)
-
-  
-
-    def __str__(self):
-        return self.name
 
 SUBTASK_CHOICES = (
     ('AGENT', "Agent"),
