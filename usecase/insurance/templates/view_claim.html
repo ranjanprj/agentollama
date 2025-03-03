@@ -127,7 +127,7 @@
             {% endif %}
         </div>
         <div class="alert alert-info">
-            {{ claim.llm_answer }}
+            {{ claim.llm_answer|safe }}
         </div>
     </div>
 </div>

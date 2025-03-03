@@ -6,8 +6,10 @@ import json
 import sqlite3
 from werkzeug.utils import secure_filename
 from datetime import datetime
+import markdown
 
 app = Flask(__name__)
+
 app.secret_key = 'your_secret_key'  # Change this to a random secret key in production
 
 # Configuration
@@ -276,13 +278,14 @@ def process_claim(claim_id):
                 # Get document IDs from response
                 upload_data = upload_response.json()
                 llm_answer = upload_data.get('llm_answer', 'No Answer')
-                
+                llm_answer_html = markdown.markdown(llm_answer)
+                print(llm_answer_html)
                 # Update claim status in database
                 with get_db_connection() as conn:
                     cursor = conn.cursor()
                     cursor.execute(
                         'UPDATE claims SET status = ?, llm_answer = ? WHERE id = ?', 
-                        ('Processed',llm_answer, claim_id)
+                        ('Processed',llm_answer_html, claim_id)
                     )
                     conn.commit()
                 

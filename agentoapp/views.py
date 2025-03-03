@@ -650,7 +650,8 @@ def api_upload_document(request):
             instance = KnowledgeRepFiles(Knowledge_rep=krep, file=uploaded_file)
             instance.save()
         print("Executing LLM")
-        llm_answer = execute_task_run(id=None,agent_name=agent_name,model='llama3.1',repository_name=repository_name)
+        
+        llm_answer = execute_task_run(id=None,agent_name=agent_name,model=None,repository_name=repository_name)
         # Response with success message
         print("Sending response back with following answer")
         print(llm_answer)
