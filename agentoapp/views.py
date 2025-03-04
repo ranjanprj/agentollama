@@ -630,17 +630,12 @@ def api_upload_document(request):
             krep = KnowledgeRep.objects.create(name=repository_name,description=description,associated_task=agent_name)
         else:
             krep = krep[0]
-            KnowledgeRepFiles.objects.filter(Knowledge_rep=krep).delete()
+            
         
         # Check if file is in the request
         if 'file' not in request.FILES:
             return JsonResponse({'error': 'No file uploaded'}, status=400)
         
-        print("Deleting existing files")
-       
-        
-        
-
         for file in request.FILES:
             # Save the uploaded file
             uploaded_file = request.FILES['file']
@@ -649,6 +644,45 @@ def api_upload_document(request):
             # Create instance and save to database
             instance = KnowledgeRepFiles(Knowledge_rep=krep, file=uploaded_file)
             instance.save()
+        
+        print("Sending response back with following answer")
+        return JsonResponse({
+            'success': True,
+            'message': f'Documents {request.FILES} uploaded successfully to repository {krep.name}',
+            'repository_name': repository_name,
+          
+        })
+        
+    except Exception as e:
+        print(e)
+        return JsonResponse({
+            'error': f'An error occurred: {str(e)}'
+        }, status=500)
+
+
+@csrf_exempt
+def api_trigger_agent(request):
+    """
+    API endpoint to receive document uploads from a Flask application
+    and add them to a knowledge repository.
+    """
+    
+    print(request.method)
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST method is allowed'}, status=405)
+    
+    try:
+        # Check if repository ID is provided
+        repository_name = request.POST.get('repository_name')
+      
+        agent_name = request.POST.get('agent_name')
+        if not repository_name or not agent_name:
+            return JsonResponse({'error': 'Repository nameis required'}, status=400)
+        
+        # associated_task = request.POST.get('associated_task')
+        # associated_task = Task.objects.filter(name=associated_task)
+        print(repository_name,agent_name)
+        
         print("Executing LLM")
         
         llm_answer = execute_task_run(id=None,agent_name=agent_name,model=None,repository_name=repository_name)
@@ -657,7 +691,7 @@ def api_upload_document(request):
         print(llm_answer)
         return JsonResponse({
             'success': True,
-            'message': f'Documents {request.FILES} uploaded successfully to repository {krep.name}',
+            'message': f'Documents analyzed successfully to repository {repository_name}',
             'repository_name': repository_name,
             'llm_answer' : llm_answer
           

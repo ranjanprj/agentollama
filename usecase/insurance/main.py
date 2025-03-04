@@ -262,7 +262,9 @@ def process_claim(claim_id):
                     flash('No valid files to process', 'danger')
                     return redirect(url_for('view_claim', claim_id=claim_id))
                 
-                # Send API request
+                print("Send API request")
+                print( multipart_data,multipart_files)
+
                 upload_response = requests.post(
                     "http://localhost:8000/api_upload_document/upload",
                     data=multipart_data,
@@ -275,21 +277,29 @@ def process_claim(claim_id):
                     flash(f'Document upload API error: {upload_response.text}', 'danger')
                     return redirect(url_for('view_claim', claim_id=claim_id))
                 
-                # Get document IDs from response
-                upload_data = upload_response.json()
-                llm_answer = upload_data.get('llm_answer', 'No Answer')
-                llm_answer_html = markdown.markdown(llm_answer)
-                print(llm_answer_html)
-                # Update claim status in database
-                with get_db_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute(
-                        'UPDATE claims SET status = ?, llm_answer = ? WHERE id = ?', 
-                        ('Processed',llm_answer_html, claim_id)
-                    )
-                    conn.commit()
-                
-                flash(f'Successfully uploaded  and AI processed documents for processing', 'success')
+        # Trigger AI
+        multipart_data = {'repository_name': repository_name,'agent_name':agent_name}
+    
+        upload_response = requests.post(
+                    "http://localhost:8000/api_trigger_agent",
+                    data=multipart_data,
+                    timeout=60  # Increase timeout for large uploads
+                )
+        # Get document IDs from response
+        upload_data = upload_response.json()
+        llm_answer = upload_data.get('llm_answer', 'No Answer')
+        llm_answer_html = markdown.markdown(llm_answer)
+        print(llm_answer_html)
+        # Update claim status in database
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                'UPDATE claims SET status = ?, llm_answer = ? WHERE id = ?', 
+                ('Processed',llm_answer_html, claim_id)
+            )
+            conn.commit()
+        
+        flash(f'Successfully uploaded  and AI processed documents for processing', 'success')
                 
     except requests.exceptions.RequestException as e:
             flash(f'API connection error: {str(e)}', 'danger')

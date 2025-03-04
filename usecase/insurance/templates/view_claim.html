@@ -119,12 +119,14 @@
         
         <div class="text-muted">
             {% if processed_count.value == 0 %}
-                <p>No documents have been processed yet. Click "Process Claim Documents" to begin processing.</p>
+                <!-- <p>No documents have been processed yet. Click "Process Claim Documents" to begin processing.</p> -->
             {% elif processed_count.value < claim.files|length %}
                 <p>{{ processed_count.value }} out of {{ claim.files|length }} documents have been processed.</p>
             {% else %}
                 <p>All documents have been processed successfully.</p>
             {% endif %}
+
+            <h4>Following Claim Analysis Report has been generated using AI LLM.</h4>
         </div>
         <div class="alert alert-info">
             {{ claim.llm_answer|safe }}
