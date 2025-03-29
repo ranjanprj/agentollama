@@ -278,6 +278,7 @@ def process_claim(claim_id):
                     return redirect(url_for('view_claim', claim_id=claim_id))
                 
         # Trigger AI
+        # return redirect(url_for('view_claim', claim_id=claim_id))
         multipart_data = {'repository_name': repository_name,'agent_name':agent_name}
     
         upload_response = requests.post(

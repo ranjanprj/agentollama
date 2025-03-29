@@ -16,7 +16,7 @@ class Task(models.Model):
 class KnowledgeRep(models.Model):
     name = models.CharField(max_length=24,unique=True)
     description = models.CharField(max_length=128)
-    associated_task = models.ForeignKey(Task,on_delete=models.SET_NULL,null=True,blank=True)
+    associated_task = models.ForeignKey(Task,on_delete=models.DO_NOTHING,null=True,blank=True)
     
     def __str__(self):
         return str(self.name)
@@ -57,7 +57,7 @@ class SubTask(models.Model):
     context = models.CharField(max_length=2048)
     instruction = models.CharField(max_length=2048)
     outputFormatInstruction = models.CharField(max_length=2048)
-    knowledgerep = models.ForeignKey(KnowledgeRep,on_delete=models.DO_NOTHING,null=True,blank=True)
+    knowledgerep = models.ForeignKey(KnowledgeRep,on_delete=models.SET_NULL,null=True,blank=True)
 
     step = models.IntegerField()
    
@@ -82,7 +82,7 @@ class SubTaskTool(models.Model):
         return f"{self.subtask} -  {self.tool}"
 
 class TaskRun(models.Model):
-    task = models.ForeignKey(Task,on_delete=models.CASCADE)
+    task = models.ForeignKey(Task,on_delete=models.DO_NOTHING)
     current_step = models.IntegerField(default=-1)
     current_step_status = models.CharField(max_length=24,choices=(("RUNNING",'Running'),('COMPLETED','Completed'),('FAILED','Failed')))
 

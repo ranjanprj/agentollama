@@ -144,7 +144,7 @@
             {% csrf_token %}
             <div class="form-group">
                 <label for="modelSelect" class="form-label">Select knowledge Repository</label>
-                <select class="form-control" id="knowledgerep" name="knowledgerep">
+                <select class="form-control" id="knowledgerep" name="knowledgerep" required>
                     <option></option>
                     
                     {% for kp in knowledgereps %}

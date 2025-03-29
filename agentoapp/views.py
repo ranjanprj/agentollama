@@ -397,10 +397,10 @@ def execute_task_run(id=None,agent_name=None,model='llama3.1',repository_name=No
                 krep = KnowledgeRep.objects.get(id=krep.id)
                 sb.knowledgerep = krep
 
-            if sb.knowledgerep.name != 'Empty':
+            if sb.knowledgerep.name != 'PREVIOUS_RESULT':
                 answer = run_rag(sb.knowledgerep.id,p,sb.model)                    
                 print(answer)
-            else:
+            elif sb.knowledgerep.name == 'PREVIOUS_RESULT':
                 output_format = False
                 answer,log = prompt_rag(p,output_format,sb.model)                   
                 print(answer)
@@ -441,10 +441,12 @@ def execute_task_run(id=None,agent_name=None,model='llama3.1',repository_name=No
                 print("====================== LOOP SB ANSWER  ====================",answer)
                 if sb.type == 'RAG':
                     p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)} Output Format: {sb.outputFormatInstruction}"
-                    if sb.knowledgerep.name != 'Empty':
+                    # RAG driven by a repository
+                    if sb.knowledgerep.name != 'PREVIOUS_RESULT':
                         answer = run_rag(sb.knowledgerep.id,p,sb.model)                    
                         print(answer)
-                    else:
+                    # RAG driven by previous_result
+                    elif sb.knowledgerep.name == 'PREVIOUS_RESULT':
                         output_format = False
                         answer,log = prompt_rag(p,output_format,sb.model)
                         print(answer)
@@ -592,7 +594,7 @@ from django.http import JsonResponse
 import json
 from django.shortcuts import redirect
 from django.urls import reverse
-
+import pathlib
 @csrf_exempt
 def api_upload_document(request):
     """
@@ -641,9 +643,13 @@ def api_upload_document(request):
             uploaded_file = request.FILES['file']
             print(uploaded_file)
             
-            # Create instance and save to database
-            instance = KnowledgeRepFiles(Knowledge_rep=krep, file=uploaded_file)
-            instance.save()
+
+            print(f'krep/{repository_name}/{uploaded_file.name}')
+            
+            if not pathlib.Path(f'krep/{repository_name}/{uploaded_file.name}').is_file():
+                # Create instance and save to database
+                instance = KnowledgeRepFiles(Knowledge_rep=krep, file=uploaded_file)
+                instance.save()
         
         print("Sending response back with following answer")
         return JsonResponse({

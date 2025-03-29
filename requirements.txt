@@ -24,6 +24,7 @@ Deprecated==1.2.18
 dirtyjson==1.0.8
 distro==1.9.0
 Django==5.1.6
+duckduckgo_search==7.5.1
 durationpy==0.9
 fastapi==0.115.8
 filelock==3.17.0
@@ -73,6 +74,7 @@ llama-index-readers-file==0.4.5
 llama-index-readers-llama-parse==0.4.0
 llama-index-vector-stores-chroma==0.4.1
 llama-parse==0.6.1
+lxml==5.3.1
 Markdown==3.7
 markdown-it-py==3.0.0
 MarkupSafe==3.0.2
@@ -109,6 +111,7 @@ pandas==2.2.3
 pillow==11.1.0
 pip-system-certs==4.0
 posthog==3.14.2
+primp==0.14.0
 propcache==0.3.0
 protobuf==5.29.3
 pyarrow==19.0.1
