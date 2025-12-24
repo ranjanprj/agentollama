@@ -1,6 +1,358 @@
-<h4>View Logs</h4>
-<h3>Task: {{task_run.task.name}}</h3>
+<!DOCTYPE html>
+<html lang="en">
 
-{% for task_log in task_logs %}
-    {{task_log.log|safe}}
-{% endfor %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Execution Trace | Agentollama</title>
+    <!-- Stable CDN Links -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .premium-card {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        /* Tree Structure Styles */
+        .tree-container {
+            font-family: 'JetBrains Mono', monospace;
+            padding: 1rem;
+        }
+
+        .tree-node {
+            position: relative;
+            padding-left: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .tree-node::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: -0.25rem;
+            width: 1px;
+            background: #e2e8f0;
+        }
+
+        .tree-node:last-child::before {
+            height: 0.75rem;
+        }
+
+        .tree-node::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0.75rem;
+            width: 1rem;
+            height: 1px;
+            background: #e2e8f0;
+        }
+
+        .tree-folder {
+            cursor: pointer;
+            user-select: none;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background 0.2s;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #1e293b;
+        }
+
+        .tree-folder:hover {
+            background: #f1f5f9;
+        }
+
+        .tree-content {
+            margin-left: 1rem;
+            padding-left: 0.5rem;
+            border-left: 1px dashed #cbd5e1;
+        }
+
+        /* Hide content when details is closed */
+        details:not([open]) > .tree-content {
+            display: none;
+        }
+
+        .tree-file {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.75rem;
+            color: #64748b;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            word-break: break-all;
+        }
+
+        .folder-icon { color: #6366f1; }
+        .file-icon { color: #94a3b8; margin-top: 0.15rem; }
+
+        .label-pill {
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 1px 6px;
+            border-radius: 4px;
+        }
+
+        .pill-prompt { background: #e0f2fe; color: #0369a1; }
+        .pill-tool { background: #fef3c7; color: #92400e; }
+        .pill-answer { background: #dcfce7; color: #166534; }
+        .pill-model { background: #f3e8ff; color: #7e22ce; }
+
+        pre {
+            background: #f8fafc;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+            margin-top: 0.25rem;
+            width: 100%;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            font-size: 0.7rem;
+        }
+
+        details summary::-webkit-details-marker { display: none; }
+        details > summary { list-style: none; }
+        
+        /* Rotation helper */
+        details[open] > summary .bi-chevron-right {
+            transform: rotate(90deg);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen py-10 px-4 flex flex-col items-center pt-24">
+    <!-- Branding Clip -->
+    <a href="{% url 'agentoapp:index' %}" class="fixed top-0 left-1/2 -translate-x-1/2 z-[100] group">
+        <div class="bg-white px-8 py-3 rounded-b-3xl shadow-[0_10px_30px_-5px_rgba(0,0,0,0.1)] border-x border-b border-gray-100 flex items-center gap-3 group-hover:bg-gray-50 transition-colors">
+            <i class="bi bi-robot text-indigo-600 text-xl"></i>
+            <span class="font-black tracking-[0.2em] text-gray-800 text-xs uppercase">Agentollama</span>
+        </div>
+    </a>
+
+    <div class="w-full max-w-5xl">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6 px-4">
+            <div>
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="p-2.5 bg-indigo-600 rounded-xl text-white shadow-lg shadow-indigo-100">
+                        <i class="bi bi-diagram-3-fill text-xl"></i>
+                    </div>
+                    <h1 class="text-3xl font-black text-gray-800 tracking-tight uppercase">Trace Explorer</h1>
+                </div>
+                <p class="text-gray-500 font-medium">Debugging workflow: <span class="text-indigo-600 font-bold">{{task_run.task.name}}</span></p>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="window.location.reload()" class="btn btn-ghost h-12 w-12 rounded-xl border border-gray-200 p-0">
+                    <i class="bi bi-arrow-clockwise text-lg text-gray-400"></i>
+                </button>
+                <button onclick="window.close()" class="btn btn-ghost h-12 rounded-xl font-bold text-gray-400 border border-gray-200 px-6">
+                    <i class="bi bi-x-lg"></i> EXIT TRACE
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="w-full px-2">
+            <div class="premium-card overflow-hidden">
+                <div class="h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+                <div class="p-6 md:p-8">
+                    <div class="flex items-center gap-4 mb-6">
+                        <h2 class="text-xs font-black text-indigo-500 uppercase tracking-[0.3em]">System Output</h2>
+                        <div class="h-px bg-gray-100 flex-grow"></div>
+                        <span class="flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black">
+                            <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> LIVE TRACE
+                        </span>
+                    </div>
+
+                    <div class="tree-container" id="treeRoot">
+                        <!-- Hierarchical tree will be injected here -->
+                        <div class="flex flex-col items-center gap-6 py-12" id="loader">
+                            <span class="loading loading-spinner loading-lg text-indigo-500"></span>
+                            <span class="text-indigo-300 font-bold uppercase tracking-widest text-xs">Reconstructing execution trace...</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-10 flex justify-center border-t border-gray-50 pt-6">
+                        <p class="text-[10px] font-black text-gray-300 uppercase tracking-widest flex items-center gap-2">
+                            <i class="bi bi-check-circle-fill text-emerald-400"></i> End of execution stream
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Hidden Raw Logs -->
+    <div id="rawLogs" class="hidden">
+        {% for task_log in task_logs %}
+        <div class="raw-entry" data-log="{{task_log.log}}"></div>
+        {% endfor %}
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const treeRoot = document.getElementById('treeRoot');
+            const rawEntries = document.querySelectorAll('.raw-entry');
+            const loader = document.getElementById('loader');
+            
+            const stepsMap = new Map();
+
+            rawEntries.forEach(entry => {
+                const rawLog = entry.getAttribute('data-log');
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(rawLog, 'text/html');
+                const pTags = doc.querySelectorAll('p');
+                
+                let metadata = { step: '?', agent: 'Unknown Agent', type: 'UNKNOWN', iteration: null };
+                const contentNodes = [];
+
+                pTags.forEach(p => {
+                    const text = p.textContent.trim();
+                    if (!text || text.includes('=====')) return;
+
+                    // Parse Markers
+                    if (text.includes('[STEP:')) {
+                        const stepMatch = text.match(/\[STEP:(\d+)\]/);
+                        const agentMatch = text.match(/\[AGENT:(.+?)\]/);
+                        const typeMatch = text.match(/\[TYPE:(.+?)\]/);
+                        const iterMatch = text.match(/\[ITERATION:(\d+)\]/);
+
+                        if (stepMatch) metadata.step = stepMatch[1];
+                        if (agentMatch) metadata.agent = agentMatch[1];
+                        if (typeMatch) metadata.type = typeMatch[1];
+                        if (iterMatch) metadata.iteration = iterMatch[1];
+                        return;
+                    }
+
+                    if (text.startsWith('Running Task')) return;
+
+                    // Build Content Node
+                    let icon = 'bi-file-earmark-text';
+                    let label = '';
+                    let pillClass = '';
+                    let contentHtml = '';
+
+                    if (text.startsWith('Assigned tools')) {
+                        label = 'TOOLS'; pillClass = 'pill-tool'; icon = 'bi-tools';
+                        contentHtml = text.replace('Assigned tools', '').trim();
+                    } else if (text.startsWith('Tool Defininition:')) {
+                        label = 'DEF'; pillClass = 'pill-tool'; icon = 'bi-code-slash';
+                        contentHtml = `<pre>${text.replace('Tool Defininition:', '').trim()}</pre>`;
+                    } else if (text.startsWith('Prompt')) {
+                        label = 'PROMPT'; pillClass = 'pill-prompt'; icon = 'bi-terminal';
+                        contentHtml = `<pre>${text.replace('Prompt', '').trim()}</pre>`;
+                    } else if (text.startsWith('Model')) {
+                        label = 'MODEL'; pillClass = 'pill-model'; icon = 'bi-cpu';
+                        contentHtml = text.replace('Model', '').trim();
+                    } else if (text.startsWith('Answer')) {
+                        label = 'RESULT'; pillClass = 'pill-answer'; icon = 'bi-check2-circle';
+                        contentHtml = `<div class="bg-emerald-50/50 p-3 rounded-lg border border-emerald-100 text-emerald-900 text-xs">${text.replace('Answer', '').trim()}</div>`;
+                    } else {
+                        contentHtml = text;
+                    }
+
+                    contentNodes.push({ label, pillClass, icon, contentHtml });
+                });
+
+                // Grouping Logic
+                if (!stepsMap.has(metadata.step)) {
+                    stepsMap.set(metadata.step, new Map());
+                }
+                const agentsMap = stepsMap.get(metadata.step);
+                if (!agentsMap.has(metadata.agent)) {
+                    agentsMap.set(metadata.agent, { type: metadata.type, entries: [] });
+                }
+                
+                agentsMap.get(metadata.agent).entries.push({
+                    iteration: metadata.iteration,
+                    content: contentNodes
+                });
+            });
+
+            // If no data, show message
+            if (stepsMap.size === 0) {
+                loader.innerHTML = '<div class="tree-file italic text-gray-400"><i class="bi bi-info-circle file-icon"></i> No trace data available yet.</div>';
+                return;
+            }
+
+            loader.remove();
+
+            // Build DOM from Map
+            Array.from(stepsMap.keys()).sort((a,b) => a-b).forEach(stepId => {
+                const stepNode = createFolderNode(`Step ${stepId}`, 'STEP', 'bi-layers-half', true);
+                treeRoot.appendChild(stepNode);
+                const stepContent = stepNode.querySelector('.tree-content');
+
+                const agentsMap = stepsMap.get(stepId);
+                agentsMap.forEach((agentData, agentName) => {
+                    const agentNode = createFolderNode(agentName, agentData.type, 'bi-robot', false);
+                    stepContent.appendChild(agentNode);
+                    const agentContent = agentNode.querySelector('.tree-content');
+
+                    agentData.entries.forEach(entry => {
+                        let targetContent = agentContent;
+                        if (entry.iteration) {
+                            const iterNode = createFolderNode(`Iteration ${entry.iteration}`, 'LOOP', 'bi-arrow-repeat', false);
+                            agentContent.appendChild(iterNode);
+                            targetContent = iterNode.querySelector('.tree-content');
+                        }
+
+                        entry.content.forEach(c => {
+                            const leaf = document.createElement('div');
+                            leaf.className = 'tree-node';
+                            leaf.innerHTML = `
+                                <div class="tree-file">
+                                    <i class="bi ${c.icon} file-icon"></i>
+                                    <div class="flex flex-col gap-1 w-full">
+                                        <div class="flex items-center gap-2">
+                                            ${c.label ? `<span class="label-pill ${c.pillClass}">${c.label}</span>` : ''}
+                                        </div>
+                                        <div class="text-gray-800">${c.contentHtml}</div>
+                                    </div>
+                                </div>
+                            `;
+                            targetContent.appendChild(leaf);
+                        });
+                    });
+                });
+            });
+
+            function createFolderNode(name, badge, icon, isOpen) {
+                const details = document.createElement('details');
+                if (isOpen) details.open = true;
+                details.className = 'tree-node';
+                details.innerHTML = `
+                    <summary class="tree-folder">
+                        <i class="bi bi-chevron-right text-[10px] text-gray-300 transition-transform"></i>
+                        <i class="bi ${icon} folder-icon"></i>
+                        <span>${name}</span>
+                        <span class="badge badge-sm bg-gray-50 border-none text-[9px] font-black text-gray-400 uppercase">${badge}</span>
+                    </summary>
+                    <div class="tree-content"></div>
+                `;
+                return details;
+            }
+        });
+    </script>
+</body>
+
+</html>

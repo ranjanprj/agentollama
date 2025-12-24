@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- <link href="https://bootswatch.com/5/simplex/bootstrap.css" rel="stylesheet"> -->
+
+    <style>
+        .task-tree .step-item {
+            border-left: 2px solid #dee2e6;
+            margin-left: 1.5rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .task-tree .step-item::before {
+            content: '';
+            position: absolute;
+            left: -2px;
+            top: 1.2rem;
+            width: 1.5rem;
+            height: 2px;
+            background-color: #dee2e6;
+        }
+
+        .step-container {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .step-container:hover {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+
+        .subtask-link {
+            color: #198754;
+            text-decoration: none;
+            transition: color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .subtask-link:hover {
+            color: #146c43;
+        }
+
+        .collapse-icon {
+            transition: transform 0.2s;
+        }
+
+        [aria-expanded="true"] .collapse-icon {
+            transform: rotate(90deg);
+        }
+
+        .LOOP {
+            margin-left: 5em;
+            color: red;
+        }
+    </style>
+</head>
+
+<body class="container py-4">
+    <!-- Header -->
+    <header class="border-bottom pb-3 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h2 mb-0">Agents on Tasks</h1>
+            <a class="btn btn-success" href="{% url 'agentoapp:index' %}">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        {% if action == 'create' %}
+        <div class="container">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h2 class="h4 mb-4">Create a new Task</h2>
+                    <form method="POST" action="{% url 'agentoapp:task' action='create' id=0 %}"
+                        class="needs-validation">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="taskName" class="form-label">Task Name</label>
+                            <input type="text" class="form-control" name="taskName" id="taskName"
+                                placeholder="Enter task name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="taskDescription" class="form-label">Description</label>
+                            <textarea class="form-control" name="taskDescription" id="taskDescription" rows="3"
+                                placeholder="Enter task description"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg"></i> Create Task
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% elif action == 'edit' %}
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="task-tree">
+                    <div class="task-header mb-4">
+                        <h2 class="h4 mb-2">{{task.name}}</h2>
+                        <p class="text-muted">{{task.description}}</p>
+                    </div>
+                    <div id="subTasks">
+
+                        {% for st in subtasks %}
+                        <div class="step-item {{st.type}}">
+                            <div class="step-container">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h3 class="h5 mb-0">
+                                        <a class="text-dark text-decoration-none step" data-bs-toggle="collapse"
+                                            href="#step{{st.step}}" role="button">
+                                            <i class="bi bi-chevron-right collapse-icon me-2"></i>
+                                            Step {{st.step}} <small>({{st.type}})</small>
+                                        </a>
+
+
+                                    </h3>
+
+                                    <!-- <div class="dropdown">
+                                        <button class="btn btn-secondary dropdown-toggle" type="button"
+                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                            Add Agent/RAG/For Loop
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <a href="/task/{{id}}/step/{{st.step}}/toolsubtask" class="dropdown-item">
+                                                <i class="bi bi-plus-lg"></i> Add Tool Agent
+                                            </a>
+                                            </li>
+                                            <li>
+                                                <a href="/task/{{id}}/step/{{st.step}}/ragsubtask"
+                                                    class="dropdown-item">
+                                                    <i class="bi bi-plus-lg"></i> Add RAG Agent
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a href="/task/{{id}}/step/{{st.step}}/loopsubtask"
+                                                    class="dropdown-item">
+                                                    <i class="bi bi-plus-lg"></i> Add For Loop
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div> -->
+
+                                </div>
+
+                                <div class="collapse show" id="step{{st.step}}">
+                                    <div class="ps-4">
+                                        <div class="mb-2">
+                                            <a href="/task/{{id}}/step/{{st.id}}/edit" class="subtask-link">
+                                                <i class="bi bi-circle"></i>
+                                                {{st.name}}
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <button id="addStep" class="btn btn-outline-success mt-3">
+                        <i class="bi bi-plus-lg"></i> Add Step
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <div class="row g-2 align-items-end mb-3">
+                <div class="col-md-6">
+                    <label for="modelSelect" class="form-label">Select Model for Tool</label>
+                    <select class="form-control" id="modelSelect" name="model">
+                        <option></option>
+                        {% for model in available_models %}
+                        <option value="{{ model }}" {% if model=="llama3.1:latest" %} selected="selected" {%endif%}>
+                            {{ model }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <a id="runTaskBtn" href="/task/run/{{id}}" class="btn btn-success">
+                        <i class="bi bi-play-fill"></i> Run Task
+                    </a>
+                    <a id="viewLogs" href="/task/viewlogs/{{id}}" target="_blank" class="btn btn-success">
+                        <i class="bi bi-play-fill"></i> View Logs
+                    </a>
+                </div>
+
+            </div>
+            <div id="result" class="mt-3 card">
+                <div class="card-body"></div>
+            </div>
+        </div>
+        {% endif %}
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+
+    <script>
+        $("div.LOOP").nextAll().css("margin-left", "5em");
+        $("#addStep").click(function (e) {
+            const id = $("#subTasks").children().length;
+            const task = `
+                <div class="step-item">
+                    <div class="step-container">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h3 class="h5 mb-0">
+                                <a class="text-dark text-decoration-none" data-bs-toggle="collapse" 
+                                    href="#step${id}" role="button">
+                                    <i class="bi bi-chevron-right collapse-icon me-2"></i>
+                                    Step ${id}
+                                </a>
+                            </h3>
+                      
+                                    <div class="dropdown">
+                                        <button class="btn btn-secondary dropdown-toggle" type="button"
+                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                            Add Agent/RAG/For Loop
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <a href="/task/{{id}}/step/${id}/toolsubtask" class="dropdown-item">
+                                                <i class="bi bi-plus-lg"></i> Add Tool Agent
+                                            </a>
+                                            </li>
+                                            <li>
+                                                <a href="/task/{{id}}/step/${id}/ragsubtask"
+                                                    class="dropdown-item">
+                                                    <i class="bi bi-plus-lg"></i> Add RAG Agent
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a href="/task/{{id}}/step/${id}/loopsubtask"
+                                                    class="dropdown-item">
+                                                    <i class="bi bi-plus-lg"></i> Add For Loop
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                        </div>
+                        <div class="collapse show" id="step${id}">
+                            <div class="ps-4"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $("#subTasks").append(task);
+            $("div.LOOP").nextAll().css("margin-left", "5em");
+        });
+
+        $("#runTaskBtn").click(function (e) {
+            e.preventDefault();
+            const $btn = $(this);
+            const $result = $("#result .card-body");
+            const selectedModel = $("#modelSelect").val();
+
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Running...');
+
+            $.ajax({
+                url: "/task/run/{{id}}?model=" + selectedModel,
+                method: 'GET',
+                success: function (result) {
+                    $result.html(result);
+                },
+                complete: function () {
+                    $btn.prop('disabled', false).html('<i class="bi bi-play-fill"></i> Run Task');
+                }
+            });
+        });
+
+
+
+        // Start polling for current step
+        let pollInterval;
+
+        // Only start polling if we're on the edit page
+        if ($('#subTasks').length > 0) {
+            pollInterval = setInterval(function () {
+                $.ajax({
+                    url: "/task/status/{{id}}",
+                    method: 'GET',
+                    success: function (response) {
+                        // Remove previous highlighting from all step containers
+                        $(".step-container").removeClass("bg-light").removeClass("border-success");
+
+                        if (response.current_step !== null) {
+                            // Find the step item that matches the current step and highlight its container
+                            $(`.step-item:nth-child(${response.current_step + 1}) .step-container`)
+                                .addClass("bg-light border-success");
+                        }
+
+                        if (response.status === 'completed') {
+                            clearInterval(pollInterval);
+                        }
+                    },
+                    error: function () {
+                        clearInterval(pollInterval);
+                    }
+                });
+            }, 5000000000);
+        }
+
+        // Add CSS for highlighting - move this to the style section in head
+        const highlightStyles = `
+            .step-container.bg-light.border-success {
+                border: 2px solid #198754 !important;
+                background-color: #f8f9fa !important;
+                transition: all 0.3s ease;
+                box-shadow: 0 0 10px rgba(25, 135, 84, 0.2);
+            }
+        `;
+
+        // Properly append the styles to head
+        const styleElement = document.createElement('style');
+        styleElement.textContent = highlightStyles;
+        document.head.appendChild(styleElement);
+
+
+
+    </script>
+
+
+</body>
+
+</html>

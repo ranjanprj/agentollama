@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subtask Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+        <!-- <link href="https://bootswatch.com/5/simplex/bootstrap.css" rel="stylesheet"> -->
+    <style>
+        :root {
+            --primary-color: #198754;
+            --border-color: #dee2e6;
+            --form-spacing: 1.5rem;
+        }
+
+        .page-header {
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .form-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background-color: #fff;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .form-group {
+            margin-bottom: var(--form-spacing);
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+        }
+
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #212529;
+        }
+
+        .tools-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .selected-tools {
+            margin-top: 1rem;
+        }
+
+        .tool-badge {
+            display: inline-flex;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            margin: 0.25rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .tool-badge .remove-tool {
+            margin-left: 0.5rem;
+            cursor: pointer;
+            color: #dc3545;
+        }
+
+        /* Tree styles preserved for consistency */
+        .tree {
+            --spacing: 1.5rem;
+            --radius: 10px;
+        }
+
+        .tree li {
+            display: block;
+            position: relative;
+            padding-left: calc(2 * var(--spacing) - var(--radius) - 2px);
+        }
+
+        .tree ul {
+            margin-left: calc(var(--radius) - var(--spacing));
+            padding-left: 0;
+        }
+
+        .tree ul li {
+            border-left: 2px solid var(--border-color);
+        }
+
+        .tree ul li:last-child {
+            border-color: transparent;
+        }
+
+        .tree ul li::before {
+            content: '';
+            display: block;
+            position: absolute;
+            top: calc(var(--spacing) / -2);
+            left: -2px;
+            width: calc(var(--spacing) + 2px);
+            height: calc(var(--spacing) + 1px);
+            border: solid var(--border-color);
+            border-width: 0 0 2px 2px;
+        }
+    </style>
+</head>
+
+<body class="container py-4 bg-light">
+    <!-- Header -->
+    <header class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h2 mb-0">Agent on Sub Task</h1>
+            <div class="d-flex gap-2">
+                <a class="btn btn-success" href="/tools/create/0">
+                    <i class="bi bi-plus-lg"></i> Tool
+                </a>
+               
+                <a class="btn btn-success" href="/task/edit/{{taskId}}">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="form-container">
+        <h2 class="h4 mb-4">Create/Edit Agent's Sub Task</h2>
+        {% if subtask %}
+        <form method="POST" action="/task/{{taskId}}/subtask/{{subtask.id}}/edit" class="needs-validation">
+        {% else %}
+        <form method="POST" action="/task/{{taskId}}/subtask/{{step}}/create" class="needs-validation">
+        {% endif %}
+        
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="subTaskName" class="form-label">Sub Task Name</label>
+                <input 
+                    type="text" 
+                    class="form-control" 
+                    id="subTaskName"
+                    name="subTaskName" 
+                    placeholder="Enter sub task name"
+                    value="{{subtask.name}}"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="context" class="form-label">[Agent]  Context</label>
+                <textarea 
+                    class="form-control" 
+                    id="context"
+                    name="context" 
+                    placeholder="Provide context for the sub task"
+                    rows="4"
+                    
+                >{{subtask.context}}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="instruction" class="form-label">[Agent]  Instructions</label>
+                <textarea 
+                    class="form-control" 
+                    id="instruction"
+                    name="instruction" 
+                    placeholder="Enter detailed instructions"
+                    rows="4"
+                >{{subtask.instruction}}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="outputFormatInstruction" class="form-label">[Agent]  Output Format Instructions</label>
+                <textarea 
+                    class="form-control" 
+                    id="outputFormatInstruction"
+                    name="outputFormatInstruction" 
+                    placeholder="Specify the expected output format"
+                    rows="4"
+                    
+                >{{subtask.outputFormatInstruction}}</textarea>
+            </div>
+
+            <!-- Tools Section -->
+            
+            <div class="tools-section">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <label class="form-label mb-0">[Agent] Tools</label>
+                    <div class="input-group" style="max-width: 400px;">
+                        <select class="form-select" id="toolSelect" name="tool">
+                            <option value="">Select a tool...</option>
+                            {% for tool in tools %}
+                                <option value="{{tool.id}}">{{tool.name}}</option>
+                            {% endfor %}
+                        </select>
+                        <button class="btn btn-outline-secondary" type="button" id="addTool">
+                            Add Tool
+                        </button>
+                    </div>
+                </div>
+            
+                <!-- Selected Tools -->
+                <div class="selected-tools" id="selectedTools">
+                    {% for assigned_tool in assigned_tools %}
+                        <div class="tool-badge" data-tool-id="{{ assigned_tool.tool.id }}">
+                            {{ assigned_tool.tool.name }}
+                            <span class="remove-tool">×</span>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Hidden input to store selected tools -->
+                <input type="hidden" name="selectedTools" id="selectedToolsInput" 
+                       value="{% for assigned_tool in assigned_tools %}{{ assigned_tool.tool.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+            </div>
+
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> Submit
+                </button>
+            </div>
+        </form>
+    </main>
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+
+    <script>
+       $(document).ready(function() {
+        const selectedTools = new Set([
+            {% for assigned_tool in assigned_tools %}
+                "{{ assigned_tool.tool.id }}"{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]);
+        console.log(selectedTools);
+        updateSelectedToolsInput();
+        $('#addTool').click(function() {
+            const select = $('#toolSelect');
+            const toolId = select.val();
+            const toolName = select.find('option:selected').text();
+            
+            if (toolId && !selectedTools.has(toolId)) {
+                selectedTools.add(toolId);
+                
+                const toolBadge = $(`
+                    <div class="tool-badge" data-tool-id="${toolId}">
+                        ${toolName}
+                        <span class="remove-tool">×</span>
+                    </div>
+                `);
+                
+                $('#selectedTools').append(toolBadge);
+                updateSelectedToolsInput();
+            }
+            
+            select.val('');
+        });
+
+        $(document).on('click', '.remove-tool', function() {
+
+        const toolId = $(this).parent().data('tool-id');
+        console.log('Removing tool ID:', toolId);
+        
+        // Remove the tool badge
+        $(this).closest('.tool-badge').remove();
+        
+        // Remove from the selected tools set
+        selectedTools.delete(toolId.toString());
+        
+        updateSelectedToolsInput();
+        console.log('Remaining tools:', Array.from(selectedTools));
+    });
+        function updateSelectedToolsInput() {
+            $('#selectedToolsInput').val(Array.from(selectedTools).join(','));
+        }
+    });
+    </script>
+</body>
+</html>

@@ -1,306 +1,235 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Subtask Management</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  
+    <title>Loop Configuration | Agentollama</title>
+    <!-- Stable CDN Links -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
     <style>
-        :root {
-            --primary-color: #198754;
-            --border-color: #dee2e6;
-            --form-spacing: 1.5rem;
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f3f4f6;
+            background-image: radial-gradient(circle at top right, rgba(99, 102, 241, 0.05), transparent 40%),
+                              radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.05), transparent 40%);
         }
 
-        .page-header {
-            padding: 2rem 0;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid var(--border-color);
+        .premium-card {
+            background: white;
+            border-radius: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
-        .form-container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 2rem;
-            background-color: #fff;
-            border-radius: 0.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        .glass-header {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         }
 
-        .form-group {
-            margin-bottom: var(--form-spacing);
-        }
-
-        .form-control:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
-        }
-
-        textarea.form-control {
-            min-height: 120px;
-            resize: vertical;
-        }
-
-        .form-label {
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-            color: #212529;
-        }
-
-        .tools-section {
-            margin-top: 2rem;
-            padding-top: 2rem;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .selected-tools {
-            margin-top: 1rem;
+        .input:focus, .select:focus, .textarea:focus {
+            @apply ring-4 ring-indigo-50 border-indigo-500 outline-none;
         }
 
         .tool-badge {
-            display: inline-flex;
-            align-items: center;
-            background: #f8f9fa;
-            padding: 0.5rem 1rem;
-            border-radius: 2rem;
-            margin: 0.25rem;
-            border: 1px solid var(--border-color);
+            @apply flex items-center gap-2 bg-gray-50 text-gray-700 px-4 py-2 rounded-xl border border-gray-100 font-bold text-sm transition-all hover:bg-white hover:shadow-md;
         }
 
-        .tool-badge .remove-tool {
-            margin-left: 0.5rem;
-            cursor: pointer;
-            color: #dc3545;
-        }
-
-        /* Tree styles preserved for consistency */
-        .tree {
-            --spacing: 1.5rem;
-            --radius: 10px;
-        }
-
-        .tree li {
-            display: block;
-            position: relative;
-            padding-left: calc(2 * var(--spacing) - var(--radius) - 2px);
-        }
-
-        .tree ul {
-            margin-left: calc(var(--radius) - var(--spacing));
-            padding-left: 0;
-        }
-
-        .tree ul li {
-            border-left: 2px solid var(--border-color);
-        }
-
-        .tree ul li:last-child {
-            border-color: transparent;
-        }
-
-        .tree ul li::before {
-            content: '';
-            display: block;
-            position: absolute;
-            top: calc(var(--spacing) / -2);
-            left: -2px;
-            width: calc(var(--spacing) + 2px);
-            height: calc(var(--spacing) + 1px);
-            border: solid var(--border-color);
-            border-width: 0 0 2px 2px;
+        .remove-tool {
+            @apply text-gray-400 hover:text-red-500 transition-colors cursor-pointer;
         }
     </style>
 </head>
 
-<body class="container py-4 bg-light">
-    <!-- Header -->
-    <header class="page-header">
-        <div class="d-flex justify-content-between align-items-center">
-            <h1 class="h2 mb-0">Agent on Sub Task</h1>
-            <div class="d-flex gap-2">
-                <a class="btn btn-success" href="/tools/create/0">
-                    <i class="bi bi-plus-lg"></i> Tool
-                </a>
-               
-                <a class="btn btn-success" href="/task/edit/{{taskId}}">
-                    <i class="bi bi-arrow-left"></i> Back
-                </a>
-            </div>
+<body class="min-h-screen py-12 px-4 selection:bg-indigo-100 flex flex-col items-center pt-20">
+    <!-- Branding Clip -->
+    <a href="{% url 'agentoapp:index' %}" class="fixed top-0 left-1/2 -translate-x-1/2 z-[100] group">
+        <div class="bg-white px-8 py-3 rounded-b-3xl shadow-[0_10px_30px_-5px_rgba(0,0,0,0.1)] border-x border-b border-gray-100 flex items-center gap-3 animate-in slide-in-from-top duration-700 group-hover:bg-gray-50 transition-colors">
+            <i class="bi bi-robot text-indigo-600 text-xl"></i>
+            <span class="font-black tracking-[0.2em] text-gray-800 text-xs uppercase">Agentollama</span>
         </div>
-    </header>
+    </a>
 
-    <!-- Main Content -->
-    <main class="form-container">
-        <h2 class="h4 mb-4">Create/Edit Agent's Loop Task</h2>
-        {% if subtask %}
-        <form method="POST" action="/task/{{taskId}}/subtask/{{subtask.id}}/edit" class="needs-validation">
-        {% else %}
-        <form method="POST" action="/task/{{taskId}}/subtask/{{step}}/create" class="needs-validation">
-        {% endif %}
-        
-            {% csrf_token %}
-            
-            <div class="form-group">
-                <label for="subTaskName" class="form-label">Sub Task Name</label>
-                <input 
-                    type="text" 
-                    class="form-control" 
-                    id="subTaskName"
-                    name="subTaskName" 
-                    placeholder="Enter sub task name"
-                    value="{{subtask.name}}"
-                    required
-                >
-            </div>
-
-            <div class="form-group">
-                <label for="subTaskName" class="form-label">Loop Over <small>( Fixed to variable previous_result obtained by previous tasks)</small></label>
-                <input 
-                    type="text" 
-                    class="form-control" 
-                    id=""
-                    name="" 
-                    placeholder="previous_result"
-                    value="previous_result"
-                    readonly
-                >
-            </div>
-            <input type="hidden" value="LOOP" id="type" name="type"/>
-            <!-- <div class="form-group">
-                <label for="context" class="form-label">[Agent]  Context</label>
-                <textarea 
-                    class="form-control" 
-                    id="context"
-                    name="context" 
-                    placeholder="Provide context for the sub task"
-                    rows="4"
-                    
-                >{{subtask.context}}</textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="instruction" class="form-label">[Agent]  Instructions</label>
-                <textarea 
-                    class="form-control" 
-                    id="instruction"
-                    name="instruction" 
-                    placeholder="Enter detailed instructions"
-                    rows="4"
-                >{{subtask.instruction}}</textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="outputFormatInstruction" class="form-label">[Agent]  Output Format Instructions</label>
-                <textarea 
-                    class="form-control" 
-                    id="outputFormatInstruction"
-                    name="outputFormatInstruction" 
-                    placeholder="Specify the expected output format"
-                    rows="4"
-                    
-                >{{subtask.outputFormatInstruction}}</textarea>
-            </div> -->
-
-            <!-- Tools Section
-            
-            <div class="tools-section">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <label class="form-label mb-0">[Agent] Tools</label>
-                    <div class="input-group" style="max-width: 400px;">
-                        <select class="form-select" id="toolSelect" name="tool">
-                            <option value="">Select a tool...</option>
-                            {% for tool in tools %}
-                                <option value="{{tool.id}}">{{tool.name}}</option>
-                            {% endfor %}
-                        </select>
-                        <button class="btn btn-outline-secondary" type="button" id="addTool">
-                            Add Tool
-                        </button>
+    <div class="w-full max-w-4xl">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6 px-2">
+            <div>
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="p-2 bg-indigo-600 rounded-xl text-white shadow-lg shadow-indigo-100">
+                        <i class="bi bi-arrow-repeat text-xl"></i>
                     </div>
+                    <h1 class="text-3xl font-black text-gray-800 tracking-tight uppercase">Loop Config</h1>
                 </div>
-             -->
-                <!-- Selected Tools -->
-                <div class="selected-tools" id="selectedTools">
-                    {% for assigned_tool in assigned_tools %}
-                        <div class="tool-badge" data-tool-id="{{ assigned_tool.tool.id }}">
-                            {{ assigned_tool.tool.name }}
-                            <span class="remove-tool">×</span>
-                        </div>
-                    {% endfor %}
-                </div>
-                
-                <!-- Hidden input to store selected tools -->
-                <input type="hidden" name="selectedTools" id="selectedToolsInput" 
-                       value="{% for assigned_tool in assigned_tools %}{{ assigned_tool.tool.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                <p class="text-gray-500 font-medium">Orchestrate iterative multi-step workflows with precision</p>
             </div>
+            <a class="btn btn-ghost h-12 rounded-xl font-bold text-gray-400 border border-gray-200" href="/task/edit/{{taskId}}">
+                <i class="bi bi-arrow-left"></i> RETURN TO TASK
+            </a>
+        </header>
 
-            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-check-lg"></i> Submit
-                </button>
+        <!-- Main Content -->
+        <main class="w-full">
+            <div class="premium-card overflow-hidden">
+                <div class="h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+                <div class="p-10">
+                    <div class="flex items-center gap-4 mb-10">
+                        <h2 class="text-xs font-black text-indigo-500 uppercase tracking-[0.3em]">Iteration Settings</h2>
+                        <div class="h-px bg-gray-100 flex-grow"></div>
+                    </div>
+
+                    {% if subtask %}
+                    <form method="POST" action="/task/{{taskId}}/subtask/{{subtask.id}}/edit" class="space-y-10">
+                    {% else %}
+                    <form method="POST" action="/task/{{taskId}}/subtask/{{step}}/create" class="space-y-10">
+                    {% endif %}
+                        {% csrf_token %}
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <!-- Basic Info -->
+                            <div class="form-control w-full">
+                                <label class="label mb-2">
+                                    <span class="label-text font-black text-gray-700 uppercase tracking-widest text-[10px]">Loop Name</span>
+                                </label>
+                                <div class="relative w-full">
+                                    <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-400">
+                                        <i class="bi bi-tag-fill"></i>
+                                    </span>
+                                    <input type="text" class="input input-bordered w-full h-14 pl-12 rounded-2xl bg-gray-50 border-none font-bold text-gray-800"
+                                        id="subTaskName" name="subTaskName" placeholder="e.g., Data Processor"
+                                        value="{{subtask.name}}" required>
+                                </div>
+                            </div>
+
+                            <div class="form-control w-full">
+                                <label class="label mb-2">
+                                    <span class="label-text font-black text-gray-700 uppercase tracking-widest text-[10px]">Recursive Target</span>
+                                </label>
+                                <div class="flex items-center h-14 px-5 bg-gray-100 rounded-2xl text-gray-400 border border-transparent">
+                                    <i class="bi bi-layers-fill mr-3"></i>
+                                    <span class="text-sm font-black">previous_result</span>
+                                    <div class="badge badge-sm ml-auto bg-gray-200 border-none text-[10px] font-black text-gray-500 tracking-tighter">LOCKED</div>
+                                </div>
+                                <input type="hidden" name="loopOver" value="previous_result">
+                            </div>
+                        </div>
+
+                        <input type="hidden" value="LOOP" id="type" name="type" />
+
+                        <!-- Assigned Tools -->
+                        <div class="pt-10 border-t border-gray-50">
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                                <div>
+                                    <h3 class="text-lg font-black text-gray-800 flex items-center gap-2">
+                                        <i class="bi bi-cpu-fill text-indigo-500"></i> Assigned Tools
+                                    </h3>
+                                    <p class="text-xs text-gray-400 font-medium">Equip your loop with specialized capabilities</p>
+                                </div>
+                                
+                                <div class="flex gap-2 w-full md:w-auto">
+                                    <select class="select select-bordered grow md:w-64 h-12 rounded-xl bg-gray-50 border-none font-bold" id="toolSelect">
+                                        <option value="" disabled selected>Select capability...</option>
+                                        {% for tool in tools %}
+                                        <option value="{{tool.id}}">{{tool.name}}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button class="btn btn-neutral h-12 px-6 rounded-xl font-black text-xs" type="button" id="addTool">
+                                        <i class="bi bi-plus-lg"></i> ADD
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-50/50 rounded-3xl p-8 min-h-[120px] border-2 border-dashed border-gray-100 flex items-center justify-center">
+                                <div class="flex flex-wrap gap-3 w-full" id="selectedTools">
+                                    {% for assigned_tool in assigned_tools %}
+                                    <div class="tool-badge" data-tool-id="{{ assigned_tool.tool.id }}">
+                                        <span>{{ assigned_tool.tool.name }}</span>
+                                        <i class="bi bi-x-circle-fill remove-tool"></i>
+                                    </div>
+                                    {% endfor %}
+                                    {% if not assigned_tools %}
+                                    <div id="noToolsPlaceholder" class="flex flex-col items-center justify-center w-full py-4 text-center">
+                                        <i class="bi bi-box2 text-3xl text-gray-200 mb-2"></i>
+                                        <p class="text-xs font-black text-gray-300 uppercase tracking-widest">No tools equipped for this loop</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <input type="hidden" name="selectedTools" id="selectedToolsInput"
+                                value="{% for assigned_tool in assigned_tools %}{{ assigned_tool.tool.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex justify-end pt-10 gap-4">
+                            <a href="/task/edit/{{taskId}}" class="btn btn-ghost h-14 px-8 rounded-2xl font-bold text-gray-400">DISCARD</a>
+                            <button type="submit" class="btn btn-primary h-14 px-12 rounded-2xl bg-indigo-600 border-none shadow-xl shadow-indigo-100 font-black text-white">
+                                <i class="bi bi-shield-check"></i> DEPLOY LOOP CONFIG
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </form>
-    </main>
+        </main>
+    </div>
+
     <!-- Scripts -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
-        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-        crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
     <script>
-       $(document).ready(function() {
-        const selectedTools = new Set([
-            {% for assigned_tool in assigned_tools %}
-                "{{ assigned_tool.tool.id }}"{% if not forloop.last %},{% endif %}
-            {% endfor %}
-        ]);
-        console.log(selectedTools);
-        updateSelectedToolsInput();
-        $('#addTool').click(function() {
-            const select = $('#toolSelect');
-            const toolId = select.val();
-            const toolName = select.find('option:selected').text();
-            
-            if (toolId && !selectedTools.has(toolId)) {
-                selectedTools.add(toolId);
-                
-                const toolBadge = $(`
-                    <div class="tool-badge" data-tool-id="${toolId}">
-                        ${toolName}
-                        <span class="remove-tool">×</span>
-                    </div>
-                `);
-                
-                $('#selectedTools').append(toolBadge);
-                updateSelectedToolsInput();
+        $(document).ready(function () {
+            const initialTools = $('#selectedToolsInput').val();
+            const selectedTools = new Set(initialTools ? initialTools.split(',') : []);
+
+            updateSelectedToolsInput();
+
+            $('#addTool').click(function () {
+                const select = $('#toolSelect');
+                const toolId = select.val();
+                const toolName = select.find('option:selected').text();
+
+                if (toolId && !selectedTools.has(toolId)) {
+                    selectedTools.add(toolId);
+                    $('#noToolsPlaceholder').hide();
+
+                    const toolBadge = $(`
+                        <div class="tool-badge animate-in zoom-in duration-300" data-tool-id="${toolId}">
+                            <span>${toolName}</span>
+                            <i class="bi bi-x-circle-fill remove-tool"></i>
+                        </div>
+                    `);
+
+                    $('#selectedTools').append(toolBadge);
+                    updateSelectedToolsInput();
+                }
+                select.val('');
+            });
+
+            $(document).on('click', '.remove-tool', function () {
+                const badge = $(this).closest('.tool-badge');
+                const toolId = badge.data('tool-id');
+
+                badge.addClass('animate-out zoom-out duration-300');
+                setTimeout(() => {
+                    badge.remove();
+                    selectedTools.delete(toolId.toString());
+                    updateSelectedToolsInput();
+
+                    if (selectedTools.size === 0) {
+                        $('#noToolsPlaceholder').fadeIn();
+                    }
+                }, 280);
+            });
+
+            function updateSelectedToolsInput() {
+                $('#selectedToolsInput').val(Array.from(selectedTools).join(','));
             }
-            
-            select.val('');
         });
-
-        $(document).on('click', '.remove-tool', function() {
-
-        const toolId = $(this).parent().data('tool-id');
-        console.log('Removing tool ID:', toolId);
-        
-        // Remove the tool badge
-        $(this).closest('.tool-badge').remove();
-        
-        // Remove from the selected tools set
-        selectedTools.delete(toolId.toString());
-        
-        updateSelectedToolsInput();
-        console.log('Remaining tools:', Array.from(selectedTools));
-    });
-        function updateSelectedToolsInput() {
-            $('#selectedToolsInput').val(Array.from(selectedTools).join(','));
-        }
-    });
     </script>
 </body>
+
 </html>

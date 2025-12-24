@@ -1,144 +1,236 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Task Management</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Knowledge Vault | Agents on Tasks</title>
+    <!-- Stable CDN Links -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f3f4f6;
+            background-image: radial-gradient(circle at top right, rgba(99, 102, 241, 0.05), transparent 40%),
+                              radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.05), transparent 40%);
+        }
+
+        .premium-card {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .input-premium {
+            width: 100% !important;
+            height: 3rem;
+            padding: 0 1rem 0 2.75rem;
+            border-radius: 0.75rem;
+            border: 1px solid #d1d5db;
+            font-weight: 600;
+            display: block;
+        }
+
+        .input-premium:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .table-premium {
+            @apply w-full overflow-hidden rounded-xl border border-gray-100;
+        }
+
+        .hero-title {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
 </head>
 
-<body class="bg-light">
-    <div class="container py-4">
+<body class="min-h-screen py-10 px-4 flex flex-col items-center selection:bg-indigo-100 pt-20">
+    <!-- Branding Clip -->
+    <a href="{% url 'agentoapp:index' %}" class="fixed top-0 left-1/2 -translate-x-1/2 z-[100] group">
+        <div class="bg-white px-8 py-3 rounded-b-3xl shadow-[0_10px_30px_-5px_rgba(0,0,0,0.1)] border-x border-b border-gray-100 flex items-center gap-3 animate-in slide-in-from-top duration-700 group-hover:bg-gray-50 transition-colors">
+            <i class="bi bi-robot text-indigo-600 text-xl"></i>
+            <span class="font-black tracking-[0.2em] text-gray-800 text-xs uppercase">Agentollama</span>
+        </div>
+    </a>
+    <div class="w-full max-w-6xl">
         <!-- Header -->
-        <header class="border-bottom pb-3 mb-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <h1 class="h2 mb-0">Agents on Tasks</h1>
-                <a class="btn btn-success" href="{% url 'agentoapp:index' %}">
-                    <i class="bi bi-arrow-left"></i> Back
-                </a>
+        <header class="flex justify-between items-center mb-10 w-full px-2">
+            <div>
+                <div class="flex items-center gap-4 mb-2">
+                    <div class="p-3 bg-indigo-600 rounded-2xl text-white shadow-lg shadow-indigo-200">
+                        <i class="bi bi-bank text-2xl"></i>
+                    </div>
+                    <h1 class="text-3xl font-extrabold tracking-tight hero-title uppercase">Knowledge Vault</h1>
+                </div>
+                <p class="text-gray-500 font-medium">Manage and vectorize your knowledge resources</p>
             </div>
+            <a class="btn btn-ghost border-gray-200 hover:bg-white px-6 font-bold" href="{% url 'agentoapp:index' %}">
+                <i class="bi bi-arrow-left"></i> Dashboard
+            </a>
         </header>
 
-        <!-- Knowledge Repository Section -->
-        <div class="row mb-4">
-            <div class="col">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white">
-                        <h3 class="h5 mb-0">Knowledge Repository</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive mb-4">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Description</th>
-                                        <th>Actions</th>
-                                        <th>Associated Task</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for k in krep %}
-                                    <tr>
-                                        <td>{{k.name}}</td>
-                                        <td>{{k.description}}</td>
-                                        <td>
-                                            <div class="btn-group">
-                                                <a href="{% url 'agentoapp:knowledgerep' action='edit' id=k.id %}" class="btn btn-sm btn-outline-primary">
-                                                    <i class="bi bi-pencil"></i>
-                                                </a>
-                                                <a href="{% url 'agentoapp:knowledgerep' action='deletekrep' id=k.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this file?');">
-                                                    <i class="bi bi-trash"></i>
-                                                </a>
-                                                <a href="{% url 'agentoapp:knowledgerep' action='vectorize' id=k.id %}" class="btn btn-sm btn-outline-success" onclick="return confirm('Vectorize this repository?');">
-                                                    <i class="bi bi-cpu"></i>
-                                                </a>
-                                            </div>
-                                        </td>
-                                        <td>{{k.associated_task}}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 gap-10">
 
-                        <h4 class="card-title mb-4">Create a Knowledge Repo</h4>
-                        <form method="POST" action="{% url 'agentoapp:knowledgerep' action=action id=id %}" class="needs-validation">
-                            {% csrf_token %}
-                            <div class="mb-1">
-                                <label for="name" class="form-label">Name</label>
-                                <input type="text" class="form-control" name="name" id="name" value="{{krepo.name}}" required>
-                            </div>
-                            <div class="mb-1">
-                                <label for="description" class="form-label">Description</label>
-                                <textarea class="form-control" name="description" id="description" rows="1">{{krepo.description}}</textarea>
-                            </div>
-                            <label for="associated_task" class="form-label">Select Knowledge Repository</label>
-                            
-                            <select class="form-select" id="associated_task" name="associated_task">
-                                <option value="">Choose Task...</option>
-                                {% for t in tasks %}
-                                <option value="{{ t.id }}"  {% if krepo.associated_task == t %}selected{%endif%}>{{ t }}</option>
+            <!-- Repository Management Section -->
+            <section class="premium-card overflow-hidden">
+                <div class="p-8 md:p-10">
+                    <div class="flex items-center gap-4 mb-8">
+                        <h2 class="text-xl font-extrabold uppercase tracking-wider text-gray-800">Secure Repositories</h2>
+                        <div class="h-px bg-gray-100 flex-grow"></div>
+                    </div>
+
+                    <!-- Repositories Table -->
+                    <div class="overflow-hidden rounded-2xl border border-gray-100 mb-12 shadow-sm">
+                        <table class="table table-zebra table-premium w-full">
+                            <thead class="bg-gray-50/80">
+                                <tr>
+                                    <th class="font-black text-gray-400 uppercase tracking-widest text-[10px] py-5">Identity</th>
+                                    <th class="font-black text-gray-400 uppercase tracking-widest text-[10px] py-5">Summary</th>
+                                    <th class="font-black text-gray-400 uppercase tracking-widest text-[10px] py-5">Workspace</th>
+                                    <th class="font-black text-gray-400 uppercase tracking-widest text-[10px] py-5 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for k in krep %}
+                                <tr class="hover:bg-indigo-50/30 transition-colors">
+                                    <td class="py-5">
+                                        <div class="font-black text-gray-800">{{k.name}}</div>
+                                        <div class="text-[10px] font-bold text-indigo-400 uppercase tracking-tighter">ID: #{{k.id}}</div>
+                                    </td>
+                                    <td class="max-w-xs truncate text-gray-500 font-medium">{{k.description}}</td>
+                                    <td>
+                                        <span class="badge badge-neutral bg-gray-100 text-gray-500 border-none font-bold text-[10px] px-3 py-3">
+                                            {{k.associated_task}}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="flex justify-center gap-2">
+                                            <a href="{% url 'agentoapp:knowledgerep' action='edit' id=k.id %}" class="btn btn-square btn-ghost btn-sm text-indigo-600" title="Edit Metadata">
+                                                <i class="bi bi-pencil-square text-lg"></i>
+                                            </a>
+                                            <a href="{% url 'agentoapp:knowledgerep' action='vectorize' id=k.id %}" class="btn btn-square btn-ghost btn-sm text-emerald-600" title="Vectorize Content" onclick="return confirm('Initiate vectorization?');">
+                                                <i class="bi bi-cpu-fill text-lg"></i>
+                                            </a>
+                                            <a href="{% url 'agentoapp:knowledgerep' action='deletekrep' id=k.id %}" class="btn btn-square btn-ghost btn-sm text-rose-500" title="Archive Repository" onclick="return confirm('Archive repository?');">
+                                                <i class="bi bi-trash3 text-lg"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-12 opacity-30 italic font-bold text-sm tracking-widest">NO REPOSITORIES INITIALIZED</td>
+                                </tr>
                                 {% endfor %}
-                            </select>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-lg"></i> Create
-                            </button>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Repository Configuration Form -->
+                    <div class="bg-indigo-50/30 rounded-2xl p-8 border border-indigo-100">
+                        <h3 class="text-sm font-black mb-6 uppercase tracking-widest text-indigo-700 flex items-center gap-3">
+                            <i class="bi bi-plus-circle-fill"></i> Initialize New Repository
+                        </h3>
+                        <form method="POST" action="{% url 'agentoapp:knowledgerep' action=action id=id %}" class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+                            {% csrf_token %}
+                            <div class="space-y-2 md:col-span-1">
+                                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Identity</label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-300"><i class="bi bi-tag-fill"></i></span>
+                                    <input type="text" class="input-premium" name="name" placeholder="Repository Name" value="{{krepo.name}}" required>
+                                </div>
+                            </div>
+                            <div class="space-y-2 md:col-span-1">
+                                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Metadata</label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-300"><i class="bi bi-body-text"></i></span>
+                                    <input type="text" class="input-premium" name="description" placeholder="Brief description" value="{{krepo.description}}">
+                                </div>
+                            </div>
+                            <div class="space-y-2 md:col-span-1">
+                                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Association</label>
+                                <select class="select select-bordered w-full h-12 rounded-xl border-gray-300 font-semibold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500" id="associated_task" name="associated_task">
+                                    <option value="">Choose Workspace...</option>
+                                    {% for t in tasks %}
+                                    <option value="{{ t.id }}" {% if krepo.associated_task == t %} selected {% endif %}>{{ t }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="md:col-span-1">
+                                <button type="submit" class="btn btn-primary w-full h-12 rounded-xl bg-indigo-600 border-none text-white font-black shadow-lg shadow-indigo-100">
+                                    <i class="bi bi-cloud-plus-fill"></i> PERSIST
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
-            </div>
-        </div>
+            </section>
 
-        <!-- File Upload Section -->
-        <div class="row mb-4">
-            <div class="col">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-success text-white">
-                        <h3 class="h5 mb-0">Upload Files to Knowledge Repository</h3>
+            <!-- Asset Management Section -->
+            <section class="premium-card overflow-hidden">
+                <div class="p-8 md:p-10">
+                    <div class="flex items-center gap-4 mb-8">
+                        <h2 class="text-xl font-extrabold uppercase tracking-wider text-gray-800">Asset Portfolio</h2>
+                        <div class="h-px bg-gray-100 flex-grow"></div>
                     </div>
-                    <div class="card-body">
-                        <form method="post" enctype="multipart/form-data" action="{% url 'agentoapp:knowledgerep' action='upload' id=id %}" class="mb-4">
-                            {% csrf_token %}
-                            <!-- <div class="mb-3">
-                                <label for="knowledgerep" class="form-label">Select Knowledge Repository</label>
-                                <select class="form-select" id="knowledgerep" name="knowledgerep" required>
-                                    <option value="">Choose repository...</option>
-                                    {% for k in krep %}
-                                    <option value="{{ k.id }}">{{ k }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div> -->
-                          <input type="hidden" id="knowledgerep" name="knowledgerep" value="{{id}}"/>
-                            <div class="mb-3">
-                                <label for="file" class="form-label">Choose File</label>
-                                <input type="file" class="form-control" id="file" name="file" required>
-                            </div>
-                            <button type="submit" class="btn btn-success">
-                                <i class="bi bi-upload"></i> Upload
-                            </button>
-                        </form>
 
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
+                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-10">
+                        <!-- Upload Processor -->
+                        <div class="lg:col-span-2 bg-emerald-50/30 rounded-2xl p-8 border-2 border-dashed border-emerald-100 flex flex-col justify-center">
+                            <h3 class="text-sm font-black mb-6 uppercase tracking-widest text-emerald-700 flex items-center gap-3">
+                                <i class="bi bi-cloud-arrow-up-fill"></i> Resource Uploader
+                            </h3>
+                            <form method="post" enctype="multipart/form-data" action="{% url 'agentoapp:knowledgerep' action='upload' id=id %}">
+                                {% csrf_token %}
+                                <input type="hidden" id="knowledgerep" name="knowledgerep" value="{{id}}" />
+                                <div class="space-y-4">
+                                    <input type="file" class="file-input file-input-bordered w-full rounded-xl border-emerald-200 bg-white font-bold" id="file" name="file" required>
+                                    <button type="submit" class="btn btn-emerald-600 w-full h-12 rounded-xl bg-emerald-600 border-none text-white font-black shadow-lg shadow-emerald-100">
+                                        <i class="bi bi-cpu"></i> INGEST TO VAULT
+                                    </button>
+                                </div>
+                            </form>
+                            <div class="mt-6 flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-white p-3 rounded-lg border border-gray-100">
+                                <i class="bi bi-info-circle-fill text-emerald-500"></i> Supported: PDF, TXT, DOCX (MAX 25MB)
+                            </div>
+                        </div>
+
+                        <!-- Asset Inventory Table -->
+                        <div class="lg:col-span-3 overflow-hidden rounded-2xl border border-gray-100 shadow-sm">
+                            <table class="table table-zebra table-premium w-full h-full">
+                                <thead class="bg-gray-50/80">
                                     <tr>
-                                        <th>Repository</th>
-                                        <th>File</th>
-                                        <th>Action</th>
+                                        <th class="font-black text-gray-400 uppercase tracking-widest text-[10px] py-5 pl-6">Resource Name</th>
+                                        <th class="font-black text-gray-400 uppercase tracking-widest text-[10px] py-5">Vault</th>
+                                        <th class="font-black text-gray-400 uppercase tracking-widest text-[10px] py-5 text-center pr-6">Archive</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for k in krepf %}
-                                    <tr>
-                                        <td>{{k.Knowledge_rep}}</td>
-                                        <td>{{k.file}}</td>
-                                        <td>
-                                            <a href="{% url 'agentoapp:knowledgerep' action='delete' id=k.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this file?');">
-                                                <i class="bi bi-trash"></i>
+                                    <tr class="hover:bg-emerald-50/30 transition-colors">
+                                        <td class="font-bold text-gray-600 text-xs py-5 pl-6">{{k.file}}</td>
+                                        <td><span class="badge badge-outline border-gray-200 text-gray-400 font-bold text-[10px]">{{k.Knowledge_rep}}</span></td>
+                                        <td class="text-center pr-6">
+                                            <a href="{% url 'agentoapp:knowledgerep' action='delete' id=k.id %}" class="btn btn-ghost btn-xs text-rose-500" onclick="return confirm('Purge asset from vault?');">
+                                                <i class="bi bi-trash3-fill"></i>
                                             </a>
                                         </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="3" class="text-center py-12 opacity-30 italic font-bold text-sm tracking-widest">PORTFOLIO IS EMPTY</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -146,12 +238,16 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
     </div>
+    
+    <footer class="mt-16 pb-8 text-center text-gray-300">
+        <p class="text-[10px] font-black uppercase tracking-[0.6em]">Agents on Tasks Infrastructure</p>
+    </footer>
 
+    <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 </body>
 </html>

@@ -22,6 +22,7 @@ from llama_index.core import StorageContext
 import chromadb
 from llama_index.vector_stores.chroma import ChromaVectorStore
 import json_repair
+import re
 
 
 def index(request):
@@ -49,11 +50,24 @@ def task(request,action,id):
     if action == 'status':       
         # take top running job
         task_run = TaskRun.objects.filter(task=id).order_by('-id').first()
-        print(task_run)
+        logs = TaskLog.objects.filter(task_run=task_run).order_by('id')
+        
+        # Prepare subtask-specific results
+        subtask_results = {}
+        for log in logs:
+            # We try to extract metadata from the log if present
+            # Format: <p>[STEP:X] [AGENT:Y] [TYPE:Z]</p>...
+            if '[STEP:' in log.log:
+                agent_match = re.search(r'\[AGENT:(.+?)\]', log.log)
+                if agent_match:
+                    agent_name = agent_match.group(1)
+                    subtask_results[agent_name] = log.log
+
         return JsonResponse({
             'current_task_run_id': task_run.id,
             'current_step': task_run.current_step,
-            'status': task_run.current_step_status
+            'status': task_run.current_step_status,
+            'subtask_results': subtask_results
         })
     if action == 'create' and request.method == 'POST':
         taskName = request.POST.get('taskName','')
@@ -85,7 +99,7 @@ def task(request,action,id):
             
     if action == 'run':
         print("RUN")
-        model = request.GET.get('model', 'llama3.1:latest')
+        model = request.GET.get('model', 'gemma3n:e4b')
         answer = execute_task_run(id=id,model=model)
         return HttpResponse(answer)
     response: ListResponse = list()
@@ -102,7 +116,7 @@ def subtask(request,taskId,step,action):
         instruction = request.POST.get('instruction','')
         outputFormatInstruction = request.POST.get('outputFormatInstruction','')
         type = request.POST.get('type','')
-        model = request.POST.get('model','llama3.1')
+        model = request.POST.get('model','gemma3n:e4b')
         
         
         id = int(request.POST.get('knowledgerep',0))
@@ -131,7 +145,7 @@ def subtask(request,taskId,step,action):
         outputFormatInstruction = request.POST.get('outputFormatInstruction','')
         selectedTools =  request.POST.get('selectedTools','')
         knowledgerep = request.POST.get('knowledgerep','')
-        model = request.POST.get('model','llama3.1')
+        model = request.POST.get('model','gemma3n:e4b')
         # print(type(selectedTools),selectedTools,selectedTools=='')
         if selectedTools != '':
             selectedTools = [int(t) for t in selectedTools.split(',')]
@@ -322,7 +336,7 @@ def knowledgerep(request,action,id):
         # bge-base embedding model
         Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-base-en-v1.5")
         # ollama
-        Settings.llm = Ollama(model='llama3.1', request_timeout=360.0)
+        Settings.llm = Ollama(model='gemma3n:e4b', request_timeout=360.0)
         print("=============== Vectorizing =============================")
         vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
         storage_context = StorageContext.from_defaults(vector_store=vector_store)
@@ -336,7 +350,7 @@ def knowledgerep(request,action,id):
     return render(request,'agentoapp/knowledgerep.html',context={'krep':krep,'krepf':krepf,'krepo':krepo,'action':action,'id':id, 'tasks':tasks})
 
 
-def execute_task_run(id=None,agent_name=None,model='llama3.1',repository_name=None):    
+def execute_task_run(id=None,agent_name=None,model='gemma3n:e4b',repository_name=None):    
     print("====================================================")
     print("---------execute_task_run---------------------------")
     print(id,agent_name,model,repository_name)
@@ -374,13 +388,14 @@ def execute_task_run(id=None,agent_name=None,model='llama3.1',repository_name=No
     loop_st = []
     subtasks = SubTask.objects.filter(belongs_to=id).order_by('step')
     for sb in subtasks:            
-        task_run.current_step = st.step
+        task_run.current_step = sb.step
         task_run.current_step_status = 'RUNNING'
         task_run.save()
         tools = []
         
         task_log = TaskLog.objects.create(task_run=task_run)
-        log = '<p>===========================================================</p>'
+        log = f'<p>[STEP:{sb.step}] [AGENT:{sb.name}] [TYPE:{sb.type}]</p>'
+        log += f'<p>===========================================================</p>'
         log += f'<p> Running Task {task}</p>'
         
         if loop_st_found:                    
@@ -429,49 +444,61 @@ def execute_task_run(id=None,agent_name=None,model='llama3.1',repository_name=No
     print("====================== LOOP SUBTASKS ====================")
     print(loop_st)
     print(loop_previous_result)
+    loop_previous_result = json.loads(loop_previous_result)
     # loop_previous_result = json.loads(loop_previous_result)
     if loop_st and loop_previous_result and len(loop_previous_result) > 0:
-        loop_previous_result = json_repair.loads(loop_previous_result)
-        print(loop_previous_result)
+        loop_count = 1
         for result in loop_previous_result['previous_result']:
             # Loop over and run all tasks 
             answer = result
             print("====================== LOOP INPUT ANSWER  ====================",answer)
-            for sb in loop_st:
+            for sb_loop in loop_st:
+                # Update current step for polling
+                task_run.current_step = sb_loop.step
+                task_run.save()
+
+                # Create separate log entry for each subtask in iteration
+                task_log = TaskLog.objects.create(task_run=task_run)
+                log = f'<p>[STEP:{sb_loop.step}] [AGENT:{sb_loop.name}] [ITERATION:{loop_count}] [TYPE:{sb_loop.type}]</p>'
+                log += f'<p>===========================================================</p>'
+                
                 print("====================== LOOP SB ANSWER  ====================",answer)
-                if sb.type == 'RAG':
-                    p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)} Output Format: {sb.outputFormatInstruction}"
+                if sb_loop.type == 'RAG':
+                    p = f"Context:{sb_loop.context} Instruction:{sb_loop.instruction.replace('previous_result',answer)} Output Format: {sb_loop.outputFormatInstruction}"
                     # RAG driven by a repository
-                    if sb.knowledgerep.name != 'PREVIOUS_RESULT':
-                        answer = run_rag(sb.knowledgerep.id,p,sb.model)                    
+                    if sb_loop.knowledgerep.name != 'PREVIOUS_RESULT':
+                        answer = run_rag(sb_loop.knowledgerep.id,p,sb_loop.model)                    
                         print(answer)
-                    # RAG driven by previous_result
-                    elif sb.knowledgerep.name == 'PREVIOUS_RESULT':
+                    elif sb_loop.knowledgerep.name == 'PREVIOUS_RESULT':
                         output_format = False
-                        answer,log = prompt_rag(p,output_format,sb.model)
+                        answer,log_rag = prompt_rag(p,output_format,sb_loop.model)
+                        log += log_rag
                         print(answer)
                 
-                if sb.type == 'TOOL':
-                    p = f"Context:{sb.context} Instruction:{sb.instruction.replace('previous_result',answer)}   "
+                if sb_loop.type == 'TOOL':
+                    p = f"Context:{sb_loop.context} Instruction:{sb_loop.instruction.replace('previous_result',answer)}   "
                     
                     output_format = False
-                    if sb.outputFormatInstruction != '':
-                        output_format = json.loads(sb.outputFormatInstruction)  
+                    if sb_loop.outputFormatInstruction != '':
+                        output_format = json.loads(sb_loop.outputFormatInstruction)  
                     print(output_format)
-                    assigned_tools = SubTaskTool.objects.filter(subtask=sb.id)
+                    assigned_tools = SubTaskTool.objects.filter(subtask=sb_loop.id)
+                    tools = []
                     for at in assigned_tools:
                         log += f'<p> Assigned tools {at}</p>'
-                        # t = Tool.objects.get(id=at.tool)
                         t = model_to_dict(at.tool)
                         log += f'<p> Tool Defininition: {at.tool} </p>'
                         tools.append(t)
                     print(tools)
                     log += f'<p> Prompt {p}</p>'
                     log += f'<p> Model  {model}</p>'
-                    answer,log = prompt(p,tools,output_format,model)
+                    answer,log_tool = prompt(p,tools,output_format,model)
+                    log += log_tool
                     log += f'<p> Answer {answer}</p>'
-                    task_log.log = log
-                    task_log.save()
+                
+                task_log.log = log
+                task_log.save()
+            loop_count += 1
     print("====================== FINAL ANSWER ====================",answer)
     task_run = TaskRun.objects.get(id=task_run.id)
     print("closing task run",task_run)

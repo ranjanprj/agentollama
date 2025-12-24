@@ -4,168 +4,237 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Task Management</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <title>Workflows | Agents on Tasks</title>
+    <!-- Stable CDN Links -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <!-- <link href="https://bootswatch.com/5/simplex/bootstrap.css" rel="stylesheet"> -->
-    
+
     <style>
-        .task-tree .step-item {
-            border-left: 2px solid #dee2e6;
-            margin-left: 1.5rem;
-            padding-left: 1.5rem;
-            position: relative;
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f3f4f6;
+            background-image: radial-gradient(circle at top right, rgba(99, 102, 241, 0.05), transparent 40%),
+                              radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.05), transparent 40%);
         }
 
-        .task-tree .step-item::before {
-            content: '';
-            position: absolute;
-            left: -2px;
-            top: 1.2rem;
-            width: 1.5rem;
-            height: 2px;
-            background-color: #dee2e6;
+        .premium-card {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .textarea-premium {
+            width: 100% !important;
+            height: 140px !important;
+            min-height: 100px;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid #d1d5db;
+            line-height: 1.6;
+            resize: vertical;
+            transition: all 0.2s ease;
+            display: block;
+        }
+
+        .textarea-premium:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .input-premium {
+            width: 100% !important;
+            height: 3.5rem;
+            padding: 0 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid #d1d5db;
+            font-weight: 600;
+            display: block;
+        }
+
+        .input-premium:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
 
         .step-container {
-            background-color: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            transition: all 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .step-container:hover {
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
         }
 
-        .subtask-link {
-            color: #198754;
-            text-decoration: none;
-            transition: color 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
+        /* Timeline vertical line */
+        .step-item {
+            position: relative;
+            padding-left: 2.5rem;
+            margin-bottom: 2rem;
         }
 
-        .subtask-link:hover {
-            color: #146c43;
+        .step-item:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 2rem;
+            bottom: -2rem;
+            width: 2px;
+            background: repeating-linear-gradient(to bottom, #e5e7eb, #e5e7eb 4px, transparent 4px, transparent 8px);
         }
 
-        .collapse-icon {
-            transition: transform 0.2s;
+        /* Timeline dot */
+        .step-item::before {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 0.75rem;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #6366f1;
+            border: 2px solid white;
+            z-index: 10;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
         }
 
-        [aria-expanded="true"] .collapse-icon {
-            transform: rotate(90deg);
-        }
-
-        .LOOP{
-            margin-left:5em;
-            color:red;
+        .hero-title {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
     </style>
 </head>
 
-<body class="container py-4">
-    <!-- Header -->
-    <header class="border-bottom pb-3 mb-4">
-        <div class="d-flex justify-content-between align-items-center">
-            <h1 class="h2 mb-0">Agents on Tasks</h1>
-            <a class="btn btn-success" href="{% url 'agentoapp:index' %}">
-                <i class="bi bi-arrow-left"></i> Back
-            </a>
+<body class="min-h-screen flex flex-col items-center py-12 px-4 selection:bg-indigo-100 pt-20">
+    <!-- Branding Clip -->
+    <a href="{% url 'agentoapp:index' %}" class="fixed top-0 left-1/2 -translate-x-1/2 z-[100] group">
+        <div class="bg-white px-8 py-3 rounded-b-3xl shadow-[0_10px_30px_-5px_rgba(0,0,0,0.1)] border-x border-b border-gray-100 flex items-center gap-3 animate-in slide-in-from-top duration-700 group-hover:bg-gray-50 transition-colors">
+            <i class="bi bi-robot text-indigo-600 text-xl"></i>
+            <span class="font-black tracking-[0.2em] text-gray-800 text-xs uppercase">Agentollama</span>
         </div>
-    </header>
+    </a>
+    <div class="w-full max-w-5xl">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-12 w-full px-2">
+            <div>
+                <div class="flex items-center gap-4 mb-2">
+                    <div class="p-3 bg-indigo-600 rounded-2xl text-white shadow-lg shadow-indigo-200">
+                        <i class="bi bi-cpu text-2xl"></i>
+                    </div>
+                    <h1 class="text-4xl font-extrabold tracking-tight hero-title uppercase">Agents on Tasks</h1>
+                </div>
+                <p class="text-gray-500 font-medium pl-1">Orchestrate and manage AI-driven workflows</p>
+            </div>
+            <a class="btn btn-ghost border-gray-200 hover:bg-white px-6 font-bold" href="{% url 'agentoapp:index' %}">
+                <i class="bi bi-arrow-left"></i> Dashboard
+            </a>
+        </header>
 
-    <!-- Main Content -->
-    <main>
-        {% if action == 'create' %}
-        <div class="container">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h2 class="h4 mb-4">Create a new Task</h2>
-                    <form method="POST" action="{% url 'agentoapp:task' action='create' id=0 %}"
-                        class="needs-validation">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="taskName" class="form-label">Task Name</label>
-                            <input type="text" class="form-control" name="taskName" id="taskName"
-                                placeholder="Enter task name" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="taskDescription" class="form-label">Description</label>
-                            <textarea class="form-control" name="taskDescription" id="taskDescription" rows="3"
-                                placeholder="Enter task description"></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-lg"></i> Create Task
-                        </button>
-                    </form>
+        <!-- Main Content -->
+        <main class="w-full">
+            {% if action == 'create' %}
+            <div class="max-w-2xl mx-auto">
+                <div class="premium-card overflow-hidden">
+                    <div class="h-2 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+                    <div class="p-10">
+                        <h2 class="text-2xl font-black mb-8 uppercase tracking-widest text-gray-800">New Workflow</h2>
+                        <form method="POST" action="{% url 'agentoapp:task' action='create' id=0 %}" class="space-y-8">
+                            {% csrf_token %}
+                            <div class="space-y-2">
+                                <label for="taskName" class="block text-sm font-black text-gray-500 uppercase tracking-tight ml-1">Workspace Name</label>
+                                <input type="text" class="input-premium" name="taskName" id="taskName" placeholder="e.g., Support Ticket Automator" required>
+                            </div>
+                            <div class="space-y-2">
+                                <label for="taskDescription" class="block text-sm font-black text-gray-500 uppercase tracking-tight ml-1">Global Objective</label>
+                                <textarea class="textarea-premium" name="taskDescription" id="taskDescription" placeholder="Describe the outcome this workflow aims to achieve..."></textarea>
+                            </div>
+                            <div class="pt-4">
+                                <button type="submit" class="btn btn-primary btn-block h-14 rounded-xl shadow-xl shadow-indigo-100 bg-indigo-600 hover:bg-indigo-700 border-none text-lg">
+                                    <i class="bi bi-plus-circle"></i> Initialize Workspace
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
-        </div>
-        {% elif action == 'edit' %}
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <div class="task-tree">
-                    <div class="task-header mb-4">
-                        <h2 class="h4 mb-2">{{task.name}}</h2>
-                        <p class="text-muted">{{task.description}}</p>
+            {% elif action == 'edit' %}
+            <div class="space-y-10">
+                <!-- Task Header Card -->
+                <div class="premium-card overflow-hidden relative">
+                    <div class="h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+                    <div class="p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                        <div>
+                            <div class="flex items-center gap-3 mb-1">
+                                <span class="badge badge-neutral font-mono text-xs py-3 px-3">WORKSPACE #{{id}}</span>
+                                <h2 class="text-3xl font-black text-gray-800 uppercase tracking-wider">{{task.name}}</h2>
+                            </div>
+                            <p class="text-gray-500 font-medium pl-1">{{task.description}}</p>
+                        </div>
                     </div>
+                </div>
+
+                <!-- Workflow Builder Section -->
+                <div class="space-y-6">
+                    <div class="flex items-center gap-4 mb-4 mt-12">
+                        <h3 class="text-xl font-black flex items-center gap-3 uppercase tracking-wider text-gray-800">
+                            <i class="bi bi-diagram-3-fill text-indigo-600"></i> Execution Pipeline
+                        </h3>
+                        <div class="h-px bg-gray-200 flex-grow"></div>
+                    </div>
+
                     <div id="subTasks">
-                       
-                        {% for st in subtasks %}                                                  
+                        {% for st in subtasks %}
                         <div class="step-item {{st.type}}">
-                            <div class="step-container">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h3 class="h5 mb-0">
-                                        <a class="text-dark text-decoration-none step" data-bs-toggle="collapse"
-                                            href="#step{{st.step}}" role="button">
-                                            <i class="bi bi-chevron-right collapse-icon me-2"></i>
-                                            Step {{st.step}} <small>({{st.type}})</small>
+                            <div class="step-container bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                                <!-- Step Header -->
+                                <div class="flex justify-between items-center p-4 border-b border-gray-100 bg-gray-50/30">
+                                    <div class="flex items-center gap-4">
+                                        <a class="step-toggle cursor-pointer flex items-center gap-3 group" data-target="#step{{st.step}}" role="button" aria-expanded="true">
+                                            <i class="bi bi-chevron-down text-gray-400 group-hover:text-indigo-600 transition-colors"></i>
+                                            <span class="font-black text-lg text-gray-700 uppercase tracking-tighter">Step {{st.step}}</span>
+                                            <span class="badge badge-sm font-bold uppercase py-3 px-4 rounded-lg {% if st.type == 'TOOL' %}bg-indigo-100 text-indigo-700 border-indigo-200{% elif st.type == 'RAG' %}bg-purple-100 text-purple-700 border-purple-200{% else %}bg-pink-100 text-pink-700 border-pink-200{% endif %}">
+                                                {{st.type}}
+                                            </span>
                                         </a>
-                                        
-                                        
-                                    </h3>
+                                    </div>
 
-                                    <!-- <div class="dropdown">
-                                        <button class="btn btn-secondary dropdown-toggle" type="button"
-                                            data-bs-toggle="dropdown" aria-expanded="false">
-                                            Add Agent/RAG/For Loop
+                                    <div class="flex items-center gap-3">
+                                        <button class="btn btn-sm btn-outline border-gray-200 rounded-lg font-bold gap-2 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 view-io-btn" 
+                                                data-subtask-name="{{st.name}}" 
+                                                data-subtask-instruction="{{st.instruction}}" 
+                                                data-subtask-context="{{st.context}}">
+                                            <i class="bi bi-eye"></i> View I/O
                                         </button>
-                                        <ul class="dropdown-menu">
-                                            <a href="/task/{{id}}/step/{{st.step}}/toolsubtask" class="dropdown-item">
-                                                <i class="bi bi-plus-lg"></i> Add Tool Agent
-                                            </a>
-                                            </li>
-                                            <li>
-                                                <a href="/task/{{id}}/step/{{st.step}}/ragsubtask"
-                                                    class="dropdown-item">
-                                                    <i class="bi bi-plus-lg"></i> Add RAG Agent
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a href="/task/{{id}}/step/{{st.step}}/loopsubtask"
-                                                    class="dropdown-item">
-                                                    <i class="bi bi-plus-lg"></i> Add For Loop
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </div> -->
-
+                                        <div class="dropdown dropdown-end">
+                                            <div tabindex="0" role="button" class="btn btn-sm btn-ghost border-gray-200 rounded-lg font-bold gap-2">
+                                                <i class="bi bi-plus-lg"></i> Append Agent
+                                            </div>
+                                            <ul tabindex="0" class="dropdown-content menu bg-white rounded-xl z-[50] w-64 p-3 shadow-2xl border border-gray-100 mt-2">
+                                                <li class="menu-title text-gray-400 uppercase text-[10px] tracking-[0.2em] font-black pb-2 px-1">Component Type</li>
+                                                <li><a href="/task/{{id}}/step/{{st.step}}/toolsubtask" class="py-3 rounded-lg"><i class="bi bi-tools text-indigo-500"></i> Tool specialist</a></li>
+                                                <li><a href="/task/{{id}}/step/{{st.step}}/ragsubtask" class="py-3 rounded-lg"><i class="bi bi-search text-purple-500"></i> Knowledge agent</a></li>
+                                                <li><a href="/task/{{id}}/step/{{st.step}}/loopsubtask" class="py-3 rounded-lg"><i class="bi bi-arrow-repeat text-pink-500"></i> Logic Loop</a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div class="collapse show" id="step{{st.step}}">
-                                    <div class="ps-4">
-                                        <div class="mb-2">
-                                            <a href="/task/{{id}}/step/{{st.id}}/edit" class="subtask-link">
-                                                <i class="bi bi-circle"></i>
-                                                {{st.name}}
-                                            </a>
+                                <!-- Step Body -->
+                                <div class="p-6 bg-white" id="step{{st.step}}">
+                                    <div class="flex items-center gap-5 group">
+                                        <div class="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-all duration-300 shadow-inner">
+                                            <i class="bi bi-robot text-xl"></i>
                                         </div>
+                                        <a href="/task/{{id}}/step/{{st.id}}/edit" class="flex flex-col no-underline">
+                                            <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Target Module</span>
+                                            <span class="text-xl font-extrabold text-gray-800 group-hover:text-indigo-600 transition-colors">{{st.name}}</span>
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -173,174 +242,248 @@
                         {% endfor %}
                     </div>
 
-                    <button id="addStep" class="btn btn-outline-success mt-3">
-                        <i class="bi bi-plus-lg"></i> Add Step
+                    <button id="addStep" class="btn btn-outline w-full h-20 border-2 border-dashed border-gray-300 rounded-2xl hover:border-indigo-400 hover:bg-indigo-50/30 hover:text-indigo-600 font-black text-lg gap-3 tracking-wider mt-6">
+                        <i class="bi bi-plus-circle-fill"></i> ADD PIPELINE STAGE
                     </button>
                 </div>
+
+                <!-- Footer Operations -->
+                <div class="premium-card overflow-hidden mt-16">
+                    <div class="p-8 bg-gray-50/50">
+                        <div class="flex flex-col lg:flex-row gap-8 items-end justify-between">
+                            <div class="space-y-2 w-full lg:max-w-md">
+                                <label for="modelSelect" class="block text-sm font-black text-gray-500 uppercase tracking-tight ml-1">Runtime Provider</label>
+                                <select class="select select-bordered select-lg w-full rounded-xl border-gray-300 font-semibold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500" id="modelSelect" name="model">
+                                    <option value="" disabled selected>Choose execution model...</option>
+                                    {% for model in available_models %}
+                                    <option value="{{ model }}" {% if model == "functiongemma:latest" %} selected="selected" {% endif %}>{{ model }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="flex flex-wrap gap-4 w-full lg:w-auto">
+                                <a id="runTaskBtn" href="/task/run/{{id}}" class="btn btn-primary h-16 grow lg:grow-0 px-8 rounded-xl shadow-xl shadow-indigo-100 bg-indigo-600 border-none text-white font-black text-lg gap-3">
+                                    <i class="bi bi-play-circle-fill"></i> EXECUTE WORKFLOW
+                                </a>
+                                <a id="viewLogs" href="/task/viewlogs/{{id}}" target="_blank" class="btn btn-neutral h-16 grow lg:grow-0 px-8 rounded-xl border-none font-black text-lg gap-3">
+                                    <i class="bi bi-terminal-fill"></i> LOGS
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Results Area -->
+                <div id="result" class="mt-8 hidden animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <div class="flex items-center gap-4 mb-4 mt-12">
+                        <h3 class="text-xl font-black flex items-center gap-3 uppercase tracking-wider text-gray-800">
+                            <i class="bi bi-window-terminal text-indigo-600"></i> Runtime Output
+                        </h3>
+                        <div class="h-px bg-gray-200 flex-grow"></div>
+                    </div>
+                    <div class="premium-card overflow-hidden border-2 border-indigo-100">
+                        <div class="p-8 bg-gray-900 font-mono text-sm text-indigo-300 whitespace-pre-wrap leading-relaxed min-h-[200px] shadow-inner">
+                            <!-- Results inject here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </main>
+        
+        <footer class="mt-24 pb-12 text-center">
+            <p class="text-[10px] font-black text-gray-300 uppercase tracking-[0.6em]">Agents on Tasks &copy; 2025</p>
+        </footer>
+    </div>
+
+    <!-- Subtask I/O Modal -->
+    <dialog id="io_modal" class="modal">
+        <div class="modal-box max-w-4xl p-0 overflow-hidden premium-card">
+            <div class="h-1.5 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+            <div class="p-8">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h3 class="text-2xl font-black text-gray-800 uppercase tracking-tight" id="modal_agent_name">Agent Context</h3>
+                        <p class="text-xs font-bold text-indigo-500 uppercase tracking-widest mt-1">Inspection Window</p>
+                    </div>
+                    <form method="dialog">
+                        <button class="btn btn-circle btn-ghost"><i class="bi bi-x-lg"></i></button>
+                    </form>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Left: Input -->
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Instructions</label>
+                            <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 text-sm font-medium text-gray-700 leading-relaxed" id="modal_instruction"></div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Context</label>
+                            <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 text-sm font-medium text-gray-700 leading-relaxed" id="modal_context"></div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Output -->
+                    <div class="space-y-4">
+                        <label class="block text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <i class="bi bi-terminal"></i> Runtime Result
+                        </label>
+                        <div class="bg-gray-900 rounded-xl p-6 font-mono text-xs text-indigo-300 min-h-[300px] shadow-inner overflow-auto max-h-[500px]" id="modal_output">
+                            <div class="flex flex-col items-center justify-center h-full opacity-30 gap-3">
+                                <i class="bi bi-cloud-slash text-4xl"></i>
+                                <span class="font-bold">No results recorded yet for this agent</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-
-        <div class="mt-4">
-            <div class="row g-2 align-items-end mb-3">
-                <div class="col-md-6">
-                    <label for="modelSelect" class="form-label">Select Model for Tool</label>
-                    <select class="form-control" id="modelSelect" name="model">
-                        <option></option>
-                        {% for model in available_models %}
-                        <option value="{{ model }}" {% if model == "llama3.1:latest" %} selected="selected" {%endif%}>
-                            {{ model }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <a id="runTaskBtn" href="/task/run/{{id}}" class="btn btn-success">
-                        <i class="bi bi-play-fill"></i> Run Task
-                    </a>
-                    <a id="viewLogs" href="/task/viewlogs/{{id}}" target="_blank" class="btn btn-success">
-                        <i class="bi bi-play-fill"></i> View Logs
-                    </a>
-                </div>
-
-            </div>
-            <div id="result" class="mt-3 card">
-                <div class="card-body"></div>
-            </div>
-        </div>
-        {% endif %}
-    </main>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
 
     <!-- Scripts -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
-        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-        crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 
     <script>
-        $( "div.LOOP" ).nextAll().css( "margin-left","5em");
+        function alignLoopElements() {
+            $(".step-item.LOOP").nextAll().css("margin-left", "3rem");
+        }
+        alignLoopElements();
+
+        $(document).on('click', '.step-toggle', function (e) {
+            e.preventDefault();
+            const targetId = $(this).data('target');
+            const $target = $(targetId);
+            const isExpanded = $(this).attr('aria-expanded') === 'true';
+
+            if (isExpanded) {
+                $target.slideUp(400);
+                $(this).attr('aria-expanded', 'false');
+            } else {
+                $target.slideDown(400);
+                $(this).attr('aria-expanded', 'true');
+            }
+        });
+
         $("#addStep").click(function (e) {
             const id = $("#subTasks").children().length;
             const task = `
                 <div class="step-item">
-                    <div class="step-container">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h3 class="h5 mb-0">
-                                <a class="text-dark text-decoration-none" data-bs-toggle="collapse" 
-                                    href="#step${id}" role="button">
-                                    <i class="bi bi-chevron-right collapse-icon me-2"></i>
-                                    Step ${id}
+                    <div class="step-container bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                        <div class="flex justify-between items-center p-4 border-b border-gray-100 bg-gray-50/30">
+                            <div class="flex items-center gap-4">
+                                <a class="step-toggle cursor-pointer flex items-center gap-3 group" data-target="#step${id}" role="button" aria-expanded="true">
+                                    <i class="bi bi-chevron-down text-gray-400 group-hover:text-indigo-600 transition-colors"></i>
+                                    <span class="font-black text-lg text-gray-700 uppercase tracking-tighter">Step ${id}</span>
+                                    <span class="badge badge-sm font-bold uppercase py-3 px-4 rounded-lg bg-gray-100 text-gray-400 border-gray-200">NEW</span>
                                 </a>
-                            </h3>
-                      
-                                    <div class="dropdown">
-                                        <button class="btn btn-secondary dropdown-toggle" type="button"
-                                            data-bs-toggle="dropdown" aria-expanded="false">
-                                            Add Agent/RAG/For Loop
-                                        </button>
-                                        <ul class="dropdown-menu">
-                                            <a href="/task/{{id}}/step/${id}/toolsubtask" class="dropdown-item">
-                                                <i class="bi bi-plus-lg"></i> Add Tool Agent
-                                            </a>
-                                            </li>
-                                            <li>
-                                                <a href="/task/{{id}}/step/${id}/ragsubtask"
-                                                    class="dropdown-item">
-                                                    <i class="bi bi-plus-lg"></i> Add RAG Agent
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a href="/task/{{id}}/step/${id}/loopsubtask"
-                                                    class="dropdown-item">
-                                                    <i class="bi bi-plus-lg"></i> Add For Loop
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </div>
+                            </div>
+                            <div class="dropdown dropdown-end">
+                                <div tabindex="0" role="button" class="btn btn-sm btn-ghost border-gray-200 rounded-lg font-bold">Add Subtask</div>
+                                <ul tabindex="0" class="dropdown-content menu bg-white rounded-xl z-[50] w-56 p-2 shadow-2xl border border-gray-100 mt-2">
+                                    <li><a href="/task/{{id}}/step/${id}/toolsubtask" class="py-3"><i class="bi bi-tools text-indigo-500"></i> Tool agent</a></li>
+                                    <li><a href="/task/{{id}}/step/${id}/ragsubtask" class="py-3"><i class="bi bi-search text-purple-500"></i> RAG agent</a></li>
+                                    <li><a href="/task/{{id}}/step/${id}/loopsubtask" class="py-3"><i class="bi bi-arrow-repeat text-pink-500"></i> For Loop</a></li>
+                                </ul>
+                            </div>
                         </div>
-                        <div class="collapse show" id="step${id}">
-                            <div class="ps-4"></div>
-                        </div>
+                        <div class="p-6 bg-white italic opacity-40 text-sm font-medium" id="step${id}">No module configured for this stage.</div>
                     </div>
                 </div>
             `;
             $("#subTasks").append(task);
-            $( "div.LOOP" ).nextAll().css( "margin-left","5em");
+            alignLoopElements();
         });
 
         $("#runTaskBtn").click(function (e) {
             e.preventDefault();
             const $btn = $(this);
-            const $result = $("#result .card-body");
+            const $resultContainer = $("#result");
+            const $resultBody = $("#result .p-8");
             const selectedModel = $("#modelSelect").val();
 
-            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Running...');
+            if (!selectedModel) {
+                alert("Please select a Runtime Provider.");
+                $("#modelSelect").focus();
+                return;
+            }
+
+            $btn.addClass('loading').prop('disabled', true).html('<span class="loading loading-spinner"></span> INITIALIZING...');
+            $resultContainer.removeClass('hidden');
+            $resultBody.html('<div class="flex flex-col items-center gap-6 py-12"><span class="loading loading-spinner loading-lg text-indigo-500"></span><span class="text-indigo-300 font-bold uppercase tracking-widest text-xs">Agents are engaging targets...</span></div>');
 
             $.ajax({
                 url: "/task/run/{{id}}?model=" + selectedModel,
                 method: 'GET',
                 success: function (result) {
-                    $result.html(result);
+                    $resultBody.html(result);
+                },
+                error: function () {
+                    $resultBody.html('<div class="text-rose-400 font-black p-4 uppercase tracking-tighter">FATAL ERROR: Pipeline execution aborted. Consult logs.</div>');
                 },
                 complete: function () {
-                    $btn.prop('disabled', false).html('<i class="bi bi-play-fill"></i> Run Task');
+                    $btn.removeClass('loading').prop('disabled', false).html('<i class="bi bi-play-circle-fill"></i> EXECUTE WORKFLOW');
                 }
             });
         });
 
+        let lastSubtaskResults = {};
 
+        $(document).on('click', '.view-io-btn', function() {
+            const name = $(this).data('subtask-name');
+            const instruction = $(this).data('subtask-instruction');
+            const context = $(this).data('subtask-context');
+            
+            $("#modal_agent_name").text(name);
+            $("#modal_instruction").text(instruction || "None provided");
+            $("#modal_context").text(context || "None provided");
+            
+            const output = lastSubtaskResults[name];
+            if (output) {
+                $("#modal_output").html(output);
+            } else {
+                $("#modal_output").html(`
+                    <div class="flex flex-col items-center justify-center h-full opacity-30 gap-3">
+                        <i class="bi bi-cloud-slash text-4xl"></i>
+                        <span class="font-bold">No results recorded yet for this agent</span>
+                    </div>
+                `);
+            }
+            
+            io_modal.showModal();
+        });
 
-        // Start polling for current step
         let pollInterval;
-        
-        // Only start polling if we're on the edit page
         if ($('#subTasks').length > 0) {
             pollInterval = setInterval(function () {
                 $.ajax({
                     url: "/task/status/{{id}}",
                     method: 'GET',
                     success: function (response) {
-                        // Remove previous highlighting from all step containers
-                        $(".step-container").removeClass("bg-light").removeClass("border-success");
-                        
+                        $(".step-container").removeClass("ring-4 ring-indigo-500/20 border-indigo-400 shadow-2xl scale-[1.01]");
                         if (response.current_step !== null) {
-                            // Find the step item that matches the current step and highlight its container
                             $(`.step-item:nth-child(${response.current_step + 1}) .step-container`)
-                                .addClass("bg-light border-success");
+                                .addClass("ring-4 ring-indigo-500/20 border-indigo-400 shadow-2xl scale-[1.01] transition-all duration-700");
+                        }
+                        
+                        if (response.subtask_results) {
+                            lastSubtaskResults = response.subtask_results;
+                            // If modal is open for currently selected agent, update its output
+                            const currModalAgent = $("#modal_agent_name").text();
+                            if (io_modal.open && lastSubtaskResults[currModalAgent]) {
+                                $("#modal_output").html(lastSubtaskResults[currModalAgent]);
+                            }
                         }
 
-                        if (response.status === 'completed') {
-                            clearInterval(pollInterval);
-                        }
+                        if (response.status === 'completed') clearInterval(pollInterval);
                     },
-                    error: function () {
-                        clearInterval(pollInterval);
-                    }
+                    error: function () { clearInterval(pollInterval); }
                 });
-            }, 5000000000);
+            }, 2000);
         }
-
-        // Add CSS for highlighting - move this to the style section in head
-        const highlightStyles = `
-            .step-container.bg-light.border-success {
-                border: 2px solid #198754 !important;
-                background-color: #f8f9fa !important;
-                transition: all 0.3s ease;
-                box-shadow: 0 0 10px rgba(25, 135, 84, 0.2);
-            }
-        `;
-
-        // Properly append the styles to head
-        const styleElement = document.createElement('style');
-        styleElement.textContent = highlightStyles;
-        document.head.appendChild(styleElement);
-     
-
-     
     </script>
-
-
 </body>
-
 </html>

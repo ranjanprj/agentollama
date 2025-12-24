@@ -1,293 +1,292 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Subtask Management</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-        <!-- <link href="https://bootswatch.com/5/simplex/bootstrap.css" rel="stylesheet"> -->
+    <title>Agent Configuration | Agents on Tasks</title>
+    <!-- Stable CDN Links -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
     <style>
-        :root {
-            --primary-color: #198754;
-            --border-color: #dee2e6;
-            --form-spacing: 1.5rem;
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f3f4f6;
+            background-image: radial-gradient(circle at top right, rgba(99, 102, 241, 0.05), transparent 40%),
+                              radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.05), transparent 40%);
         }
 
-        .page-header {
-            padding: 2rem 0;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid var(--border-color);
+        .premium-card {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
-        .form-container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 2rem;
-            background-color: #fff;
-            border-radius: 0.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-
-        .form-group {
-            margin-bottom: var(--form-spacing);
-        }
-
-        .form-control:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
-        }
-
-        textarea.form-control {
-            min-height: 120px;
+        .textarea-premium {
+            width: 100% !important;
+            height: 160px !important;
+            min-height: 100px;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid #d1d5db;
+            line-height: 1.6;
             resize: vertical;
+            transition: all 0.2s ease;
+            display: block;
         }
 
-        .form-label {
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-            color: #212529;
+        .textarea-premium:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
 
-        .tools-section {
-            margin-top: 2rem;
-            padding-top: 2rem;
-            border-top: 1px solid var(--border-color);
+        .input-premium {
+            width: 100% !important;
+            height: 3.5rem;
+            padding: 0 1rem 0 3rem;
+            border-radius: 0.75rem;
+            border: 1px solid #d1d5db;
+            font-weight: 600;
+            display: block;
         }
 
-        .selected-tools {
-            margin-top: 1rem;
+        .input-premium:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
 
         .tool-badge {
             display: inline-flex;
             align-items: center;
-            background: #f8f9fa;
+            gap: 0.75rem;
             padding: 0.5rem 1rem;
-            border-radius: 2rem;
-            margin: 0.25rem;
-            border: 1px solid var(--border-color);
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: #4b5563;
+            transition: all 0.2s;
         }
 
-        .tool-badge .remove-tool {
-            margin-left: 0.5rem;
+        .remove-tool {
             cursor: pointer;
-            color: #dc3545;
+            color: #9ca3af;
+            font-size: 1.25rem;
+            font-weight: 800;
+            line-height: 1;
         }
 
-        /* Tree styles preserved for consistency */
-        .tree {
-            --spacing: 1.5rem;
-            --radius: 10px;
+        .remove-tool:hover {
+            color: #ef4444;
         }
 
-        .tree li {
-            display: block;
-            position: relative;
-            padding-left: calc(2 * var(--spacing) - var(--radius) - 2px);
-        }
-
-        .tree ul {
-            margin-left: calc(var(--radius) - var(--spacing));
-            padding-left: 0;
-        }
-
-        .tree ul li {
-            border-left: 2px solid var(--border-color);
-        }
-
-        .tree ul li:last-child {
-            border-color: transparent;
-        }
-
-        .tree ul li::before {
-            content: '';
-            display: block;
-            position: absolute;
-            top: calc(var(--spacing) / -2);
-            left: -2px;
-            width: calc(var(--spacing) + 2px);
-            height: calc(var(--spacing) + 1px);
-            border: solid var(--border-color);
-            border-width: 0 0 2px 2px;
+        .hero-title {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
     </style>
 </head>
 
-<body class="container py-4 bg-light">
-    <!-- Header -->
-    <header class="page-header">
-        <div class="d-flex justify-content-between align-items-center">
-            <h1 class="h2 mb-0">Agent on Sub Task</h1>
-            <div class="d-flex gap-2">
-                <a class="btn btn-success" href="/tools/create/0">
-                    <i class="bi bi-plus-lg"></i> Tool
-                </a>
-               
-                <a class="btn btn-success" href="/task/edit/{{taskId}}">
-                    <i class="bi bi-arrow-left"></i> Back
-                </a>
-            </div>
+<body class="min-h-screen py-12 px-4 selection:bg-indigo-100 pt-20">
+    <!-- Branding Clip -->
+    <a href="{% url 'agentoapp:index' %}" class="fixed top-0 left-1/2 -translate-x-1/2 z-[100] group">
+        <div class="bg-white px-8 py-3 rounded-b-3xl shadow-[0_10px_30px_-5px_rgba(0,0,0,0.1)] border-x border-b border-gray-100 flex items-center gap-3 animate-in slide-in-from-top duration-700 group-hover:bg-gray-50 transition-colors">
+            <i class="bi bi-robot text-indigo-600 text-xl"></i>
+            <span class="font-black tracking-[0.2em] text-gray-800 text-xs uppercase">Agentollama</span>
         </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="form-container">
-        <h2 class="h4 mb-4">Create/Edit Agent's Sub Task</h2>
-        {% if subtask %}
-        <form method="POST" action="/task/{{taskId}}/subtask/{{subtask.id}}/edit" class="needs-validation">
-        {% else %}
-        <form method="POST" action="/task/{{taskId}}/subtask/{{step}}/create" class="needs-validation">
-        {% endif %}
-        
-            {% csrf_token %}
-            
-            <div class="form-group">
-                <label for="subTaskName" class="form-label">Sub Task Name</label>
-                <input 
-                    type="text" 
-                    class="form-control" 
-                    id="subTaskName"
-                    name="subTaskName" 
-                    placeholder="Enter sub task name"
-                    value="{{subtask.name}}"
-                    required
-                >
-            </div>
-
-            <div class="form-group">
-                <label for="context" class="form-label">[Agent]  Context</label>
-                <textarea 
-                    class="form-control" 
-                    id="context"
-                    name="context" 
-                    placeholder="Provide context for the sub task"
-                    rows="4"
-                    
-                >{{subtask.context}}</textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="instruction" class="form-label">[Agent]  Instructions</label>
-                <textarea 
-                    class="form-control" 
-                    id="instruction"
-                    name="instruction" 
-                    placeholder="Enter detailed instructions"
-                    rows="4"
-                >{{subtask.instruction}}</textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="outputFormatInstruction" class="form-label">[Agent]  Output Format Instructions</label>
-                <textarea 
-                    class="form-control" 
-                    id="outputFormatInstruction"
-                    name="outputFormatInstruction" 
-                    placeholder="Specify the expected output format"
-                    rows="4"
-                    
-                >{{subtask.outputFormatInstruction}}</textarea>
-            </div>
-
-            <!-- Tools Section -->
-            
-            <div class="tools-section">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <label class="form-label mb-0">[Agent] Tools</label>
-                    <div class="input-group" style="max-width: 400px;">
-                        <select class="form-select" id="toolSelect" name="tool">
-                            <option value="">Select a tool...</option>
-                            {% for tool in tools %}
-                                <option value="{{tool.id}}">{{tool.name}}</option>
-                            {% endfor %}
-                        </select>
-                        <button class="btn btn-outline-secondary" type="button" id="addTool">
-                            Add Tool
-                        </button>
+    </a>
+    <div class="max-w-5xl mx-auto">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6 px-2">
+            <div>
+                <div class="flex items-center gap-4 mb-2">
+                    <div class="p-3 bg-indigo-600 rounded-2xl text-white shadow-lg shadow-indigo-200">
+                        <i class="bi bi-gear-wide-connected text-2xl"></i>
                     </div>
+                    <h1 class="text-4xl font-extrabold tracking-tight hero-title uppercase">Agent Configuration</h1>
                 </div>
-            
-                <!-- Selected Tools -->
-                <div class="selected-tools" id="selectedTools">
-                    {% for assigned_tool in assigned_tools %}
-                        <div class="tool-badge" data-tool-id="{{ assigned_tool.tool.id }}">
-                            {{ assigned_tool.tool.name }}
-                            <span class="remove-tool">×</span>
-                        </div>
-                    {% endfor %}
-                </div>
-                
-                <!-- Hidden input to store selected tools -->
-                <input type="hidden" name="selectedTools" id="selectedToolsInput" 
-                       value="{% for assigned_tool in assigned_tools %}{{ assigned_tool.tool.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                <p class="text-gray-500 font-medium pl-1">Define capabilities and logical constraints for this agent</p>
             </div>
+            <div class="flex items-center gap-4">
+                <a class="btn btn-outline border-gray-200 hover:bg-white px-6 font-bold" href="/tools/create/0">
+                    <i class="bi bi-plus-circle"></i> Create Tool
+                </a>
+                <a class="btn btn-ghost border-gray-200 hover:bg-white px-6 font-bold" href="/task/edit/{{taskId}}">
+                    <i class="bi bi-arrow-left"></i> Back to Workspace
+                </a>
+            </div>
+        </header>
 
-            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-check-lg"></i> Submit
-                </button>
+        <!-- Main Content -->
+        <main class="w-full">
+            <div class="premium-card overflow-hidden">
+                <div class="h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+                <div class="p-8 md:p-12">
+                    
+                    <div class="flex items-center gap-4 mb-10">
+                        <h2 class="text-xl font-extrabold uppercase tracking-wider text-gray-800">Deployment Logic</h2>
+                        <div class="h-px bg-gray-100 flex-grow"></div>
+                    </div>
+
+                    {% if subtask %}
+                    <form method="POST" action="/task/{{taskId}}/subtask/{{subtask.id}}/edit" class="space-y-12">
+                    {% else %}
+                    <form method="POST" action="/task/{{taskId}}/subtask/{{step}}/create" class="space-y-12">
+                    {% endif %}
+                        {% csrf_token %}
+
+                        <!-- Basic Identity -->
+                        <div class="space-y-2">
+                            <label for="subTaskName" class="block text-sm font-black text-gray-500 uppercase tracking-tight ml-1">Subtask Identity</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-400">
+                                    <i class="bi bi-tag-fill"></i>
+                                </span>
+                                <input type="text" class="input-premium" id="subTaskName" name="subTaskName" placeholder="e.g., Sentiment Analysis Block" value="{{subtask.name}}" required>
+                            </div>
+                        </div>
+
+                        <!-- Behavioral Blocks -->
+                        <div class="grid grid-cols-1 gap-10">
+                            <div class="space-y-2">
+                                <label for="context" class="flex items-center gap-2 text-sm font-black text-gray-500 uppercase tracking-tight ml-1">
+                                    <i class="bi bi-info-circle-fill text-indigo-500"></i> Agent Persona & Context
+                                </label>
+                                <textarea class="textarea-premium" id="context" name="context" placeholder="Define the agent's role and its current situational awareness...">{{subtask.context}}</textarea>
+                                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest px-1">Scope: The broad domain knowledge this agent will inhabit.</p>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label for="instruction" class="flex items-center gap-2 text-sm font-black text-gray-500 uppercase tracking-tight ml-1">
+                                    <i class="bi bi-gear-wide-connected text-purple-500"></i> Functional Workflow
+                                </label>
+                                <textarea class="textarea-premium" id="instruction" name="instruction" placeholder="Define the specific logic flow and step-by-step instructions...">{{subtask.instruction}}</textarea>
+                                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest px-1">Logic: Algorithmic steps the agent must execute.</p>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label for="outputFormatInstruction" class="flex items-center gap-2 text-sm font-black text-gray-500 uppercase tracking-tight ml-1">
+                                    <i class="bi bi-braces text-pink-500"></i> Structural Output Schema
+                                </label>
+                                <textarea class="textarea-premium" id="outputFormatInstruction" name="outputFormatInstruction" placeholder="Describe how the result should be structured (JSON/Markdown)...">{{subtask.outputFormatInstruction}}</textarea>
+                                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest px-1">Output: Target format and validation rules for the result.</p>
+                            </div>
+                        </div>
+
+                        <!-- Tool Inventory Section -->
+                        <div class="pt-12 border-t border-gray-100">
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8">
+                                <div class="space-y-1">
+                                    <h3 class="text-lg font-black text-gray-800 uppercase tracking-tight">Capability Inventory</h3>
+                                    <p class="text-sm text-gray-500 font-medium">Equip this agent with specialized toolsets</p>
+                                </div>
+                                <div class="join w-full md:w-auto shadow-xl shadow-indigo-50">
+                                    <select class="select select-bordered join-item w-full md:w-64 h-14 rounded-l-xl border-gray-300 font-semibold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500" id="toolSelect">
+                                        <option value="" disabled selected>Search capabilities...</option>
+                                        {% for tool in tools %}
+                                        <option value="{{tool.id}}">{{tool.name}}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button class="btn btn-primary join-item h-14 px-8 rounded-r-xl bg-indigo-600 border-none text-white font-black" type="button" id="addTool">
+                                        <i class="bi bi-plus-lg"></i> EQUIP
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-50 rounded-2xl p-8 min-h-[120px] border-2 border-dashed border-gray-200">
+                                <div class="flex flex-wrap gap-4" id="selectedTools">
+                                    {% for assigned_tool in assigned_tools %}
+                                    <div class="tool-badge shadow-sm" data-tool-id="{{ assigned_tool.tool.id }}">
+                                        <i class="bi bi-cpu-fill opacity-30"></i>
+                                        <span>{{ assigned_tool.tool.name }}</span>
+                                        <span class="remove-tool ml-2">&times;</span>
+                                    </div>
+                                    {% endfor %}
+                                    {% if not assigned_tools %}
+                                    <div id="noToolsPlaceholder" class="flex flex-col items-center justify-center w-full py-4 opacity-30 italic text-sm font-bold uppercase tracking-widest">
+                                        No tools equipped for this agent persona.
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <input type="hidden" name="selectedTools" id="selectedToolsInput" value="{% for assigned_tool in assigned_tools %}{{ assigned_tool.tool.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                        </div>
+
+                        <!-- Actions Area -->
+                        <div class="flex flex-col sm:flex-row justify-end items-center gap-4 pt-10 border-t border-gray-100">
+                            <a href="/task/edit/{{taskId}}" class="btn btn-ghost h-14 px-8 font-black text-gray-400">ABANDON CHANGES</a>
+                            <button type="submit" class="btn btn-primary h-14 px-12 rounded-xl shadow-xl shadow-indigo-100 bg-indigo-600 hover:bg-indigo-700 border-none text-white font-black text-lg gap-3">
+                                <i class="bi bi-cloud-check-fill"></i> DEPLOY CONFIGURATION
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </form>
-    </main>
+        </main>
+        
+        <footer class="mt-16 pb-8 text-center text-gray-300">
+            <p class="text-[10px] font-black uppercase tracking-[0.6em]">Agents on Tasks Infrastructure</p>
+        </footer>
+    </div>
+
     <!-- Scripts -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
-        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-        crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
     <script>
-       $(document).ready(function() {
-        const selectedTools = new Set([
-            {% for assigned_tool in assigned_tools %}
-                "{{ assigned_tool.tool.id }}"{% if not forloop.last %},{% endif %}
-            {% endfor %}
-        ]);
-        console.log(selectedTools);
-        updateSelectedToolsInput();
-        $('#addTool').click(function() {
-            const select = $('#toolSelect');
-            const toolId = select.val();
-            const toolName = select.find('option:selected').text();
-            
-            if (toolId && !selectedTools.has(toolId)) {
-                selectedTools.add(toolId);
-                
-                const toolBadge = $(`
-                    <div class="tool-badge" data-tool-id="${toolId}">
-                        ${toolName}
-                        <span class="remove-tool">×</span>
-                    </div>
-                `);
-                
-                $('#selectedTools').append(toolBadge);
-                updateSelectedToolsInput();
+        $(document).ready(function () {
+            const initialTools = $('#selectedToolsInput').val();
+            const selectedTools = new Set(initialTools ? initialTools.split(',') : []);
+
+            function updateSelectedToolsInput() {
+                $('#selectedToolsInput').val(Array.from(selectedTools).join(','));
             }
-            
-            select.val('');
+
+            $('#addTool').click(function () {
+                const select = $('#toolSelect');
+                const toolId = select.val();
+                const toolName = select.find('option:selected').text();
+
+                if (toolId && !selectedTools.has(toolId)) {
+                    selectedTools.add(toolId);
+                    $('#noToolsPlaceholder').hide();
+
+                    const toolBadge = $(`
+                        <div class="tool-badge shadow-sm animate-pulse" data-tool-id="${toolId}">
+                            <i class="bi bi-cpu-fill opacity-30"></i>
+                            <span>${toolName}</span>
+                            <span class="remove-tool ml-2">&times;</span>
+                        </div>
+                    `);
+
+                    $('#selectedTools').append(toolBadge);
+                    setTimeout(() => toolBadge.removeClass('animate-pulse'), 500);
+                    updateSelectedToolsInput();
+                }
+                select.val('');
+            });
+
+            $(document).on('click', '.remove-tool', function () {
+                const badge = $(this).closest('.tool-badge');
+                const toolId = badge.data('tool-id').toString();
+                badge.addClass('opacity-0 scale-95 transition-all duration-200');
+                setTimeout(() => {
+                    badge.remove();
+                    selectedTools.delete(toolId);
+                    updateSelectedToolsInput();
+                    if (selectedTools.size === 0) $('#noToolsPlaceholder').show();
+                }, 200);
+            });
         });
-
-        $(document).on('click', '.remove-tool', function() {
-
-        const toolId = $(this).parent().data('tool-id');
-        console.log('Removing tool ID:', toolId);
-        
-        // Remove the tool badge
-        $(this).closest('.tool-badge').remove();
-        
-        // Remove from the selected tools set
-        selectedTools.delete(toolId.toString());
-        
-        updateSelectedToolsInput();
-        console.log('Remaining tools:', Array.from(selectedTools));
-    });
-        function updateSelectedToolsInput() {
-            $('#selectedToolsInput').val(Array.from(selectedTools).join(','));
-        }
-    });
     </script>
 </body>
 </html>
